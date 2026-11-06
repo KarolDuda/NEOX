@@ -64,4 +64,14 @@
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Padding" Value="14,7" />
     </Style>
+
+    <!-- Panel boczny i tło treści -->
+    <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#CC070B16" />
+    <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#CC070B16" />
+    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
+    <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="Transparent" />
+    <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundSelected" Color="#1822D3EE" />
+    <SolidColorBrush x:Key="NavigationViewItemBackgroundPointerOver" Color="#0FFFFFFF" />
+    <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="#22D3EE" />
 </ResourceDictionary>

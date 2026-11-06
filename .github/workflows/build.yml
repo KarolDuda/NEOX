@@ -33,7 +33,7 @@ jobs:
 
       - name: Publikuj aplikację (x64, self-contained)
         shell: pwsh
-        run: dotnet publish "$env:PROJECT_ROOT\src\Tachyvex.App\Tachyvex.App.csproj" -c Release -r win-x64 --self-contained true -o "$env:PROJECT_ROOT\publish"
+        run: dotnet publish "$env:PROJECT_ROOT\src\Tachyvex.App\Tachyvex.App.csproj" -c Release -r win-x64 --self-contained true -p:Version=2.0.${{ github.run_number }} -o "$env:PROJECT_ROOT\publish"
 
       - name: Diagnostyka kompilatora XAML (tylko przy błędzie)
         if: failure()
@@ -57,7 +57,7 @@ jobs:
 
       - name: Zbuduj instalator
         shell: pwsh
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "$env:PROJECT_ROOT\installer\tachyvex.iss"'
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=2.0.${{ github.run_number }} "$env:PROJECT_ROOT\installer\tachyvex.iss"'
 
       - name: Opublikuj instalator w Releases
         uses: softprops/action-gh-release@v2

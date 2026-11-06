@@ -42,6 +42,7 @@ public sealed class Baseline
 public sealed class AppSettings
 {
     public bool CreateRestorePointBeforeProfiles { get; set; } = true;
+    public bool AutoUpdate { get; set; } = true;
     public string? GameExePath { get; set; }
 }
 

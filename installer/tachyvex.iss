@@ -1,5 +1,7 @@
 #define MyAppName "TACHYVEX"
-#define MyAppVersion "2.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "2.0.0"
+#endif
 #define MyAppExe "Tachyvex.exe"
 
 [Setup]
@@ -37,4 +39,6 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExe}"; Description: "Uruchom {#MyAppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExe}"; Description: "Uruchom {#MyAppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+; Aktualizacja w tle (tryb cichy): uruchom program ponownie po instalacji, bez uprawnień administratora.
+Filename: "{app}\{#MyAppExe}"; Flags: nowait runasoriginaluser; Check: WizardSilent

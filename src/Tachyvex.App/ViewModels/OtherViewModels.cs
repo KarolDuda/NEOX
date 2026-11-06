@@ -9,6 +9,7 @@ using Tachyvex.Core.Engine;
 using Tachyvex.Core.Models;
 using Tachyvex.Core.Profiles;
 using Tachyvex.Core.State;
+using System.Net.Http;
 using Tachyvex.Windows;
 using Tachyvex.Windows.Infrastructure;
 
@@ -46,12 +47,25 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _health = "";
     [ObservableProperty] private string _message = "";
     [ObservableProperty] private bool _busy;
+    [ObservableProperty] private string _ramPct = "–";
+    [ObservableProperty] private string _gpuPct = "–";
+    [ObservableProperty] private int _appliedCount;
+
+    private readonly OptimizationsViewModel _opt;
+    private readonly IStateStore _store;
+
+    public bool IsIdle => !Busy;
+    partial void OnBusyChanged(bool value) => OnPropertyChanged(nameof(IsIdle));
+
+    /// <summary>Po udanym zastosowaniu profilu (do animacji sukcesu).</summary>
+    public event Action<ProfileApplyReport>? ProfileApplied;
 
     public ObservableCollection<Profile> Profiles { get; } = new();
 
-    public DashboardViewModel(SystemMonitor monitor, ProfileService profiles, TweakEngine engine, IRestorePointService restore, DialogService dialogs, AppContextService ctx)
+    public DashboardViewModel(SystemMonitor monitor, ProfileService profiles, TweakEngine engine, IRestorePointService restore, DialogService dialogs, AppContextService ctx, OptimizationsViewModel opt, IStateStore store)
     {
-        _monitor = monitor; _profiles = profiles; _engine = engine; _restore = restore; _dialogs = dialogs; _ctx = ctx;
+        _monitor = monitor; _profiles = profiles; _engine = engine; _restore = restore; _dialogs = dialogs; _ctx = ctx; _opt = opt; _store = store;
+        AppliedCount = store.State.Snapshots.Count;
         _monitor.SampleReady += OnSample;
         foreach (var p in profiles.All()) Profiles.Add(p);
     }
@@ -59,8 +73,9 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private void OnSample(MonitorSample s) => _ui.TryEnqueue(() =>
     {
         Cpu = s.CpuPercent; CpuText = $"{s.CpuPercent:F0}%";
+        RamPct = $"{s.RamPercent}%";
         Ram = s.RamPercent; RamText = $"{s.RamPercent}%  ({Fmt.Bytes(s.RamUsedBytes)} / {Fmt.Bytes(s.RamTotalBytes)})";
-        if (s.GpuPercent is { } g) { Gpu = g; GpuText = $"{g:F0}%"; } else { Gpu = 0; GpuText = "niedostępne na tym sprzęcie"; }
+        if (s.GpuPercent is { } g) { Gpu = g; GpuText = $"{g:F0}%"; GpuPct = $"{g:F0}%"; } else { Gpu = 0; GpuText = "niedostępne na tym sprzęcie"; GpuPct = "–"; }
     });
 
     /// <summary>Monitoring działa tylko, gdy strona jest widoczna.</summary>
@@ -101,9 +116,20 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             var progress = new Progress<string>(s => Message = s);
             var rep = await _profiles.ApplyAsync(p, _ctx.Current, progress);
             Message = $"Zastosowano {rep.Applied}, pominięto {rep.Skipped}, błędów {rep.Failed}.";
-            await _dialogs.InfoAsync("Wynik profilu", string.Join("\n", rep.Lines) + (rep.Restart != RestartRequirement.None ? "\n\nAby zmiany zadziałały, uruchom ponownie komputer." : ""));
+            _opt.ReloadAppliedFlags();
+            AppliedCount = _store.State.Snapshots.Count;
+            if (rep.Applied > 0) ProfileApplied?.Invoke(rep);
+            else await _dialogs.InfoAsync("Wynik profilu", string.Join("\n", rep.Lines));
         }
         finally { Busy = false; }
+    }
+
+    /// <summary>Duży przycisk na panelu: profil Gaming.</summary>
+    [RelayCommand]
+    private Task BoostAsync()
+    {
+        var p = Profiles.FirstOrDefault(x => x.Id == "builtin.gaming") ?? Profiles.First();
+        return ApplyProfileAsync(p);
     }
 
     [RelayCommand]
@@ -507,17 +533,49 @@ public sealed partial class HistoryViewModel : ObservableObject
 // ---------------- Ustawienia ----------------
 public sealed partial class SettingsViewModel : ObservableObject
 {
-    private readonly IStateStore _store; private readonly IElevationService _elev;
+    private readonly IStateStore _store; private readonly IElevationService _elev; private readonly UpdateService _updates; private readonly DialogService _dialogs;
     [ObservableProperty] private bool _restorePointBeforeProfiles;
+    [ObservableProperty] private bool _autoUpdate;
+    [ObservableProperty] private string _updateStatus = "";
+    [ObservableProperty] private bool _updateBusy;
     public string AdminStatus => _elev.IsElevated ? "Uruchomiono jako administrator." : "Tryb standardowy: zmiany wymagające administratora są zablokowane.";
     public string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tachyvex");
-    public string Version => "TACHYVEX 2.0 (WinUI 3, .NET 10)";
+    public string Version => $"TACHYVEX {UpdateService.Current} (WinUI 3, .NET 10)";
 
-    public SettingsViewModel(IStateStore store, IElevationService elev)
-    { _store = store; _elev = elev; _restorePointBeforeProfiles = store.State.Settings.CreateRestorePointBeforeProfiles; }
+    public SettingsViewModel(IStateStore store, IElevationService elev, UpdateService updates, DialogService dialogs)
+    {
+        _store = store; _elev = elev; _updates = updates; _dialogs = dialogs;
+        _restorePointBeforeProfiles = store.State.Settings.CreateRestorePointBeforeProfiles;
+        _autoUpdate = store.State.Settings.AutoUpdate;
+    }
 
     partial void OnRestorePointBeforeProfilesChanged(bool value)
     { _store.State.Settings.CreateRestorePointBeforeProfiles = value; _ = _store.SaveAsync(); }
+
+    partial void OnAutoUpdateChanged(bool value)
+    { _store.State.Settings.AutoUpdate = value; _ = _store.SaveAsync(); }
+
+    [RelayCommand]
+    private async Task CheckUpdateAsync()
+    {
+        if (UpdateBusy) return;
+        UpdateBusy = true; UpdateStatus = "Sprawdzam…";
+        try
+        {
+            var (info, msg) = await _updates.CheckAsync();
+            UpdateStatus = msg;
+            if (info is null) return;
+            if (!await _dialogs.ConfirmAsync("Aktualizacja", $"Dostępna wersja {info.Version}. Pobrać i zainstalować teraz? Program zamknie się i uruchomi ponownie (pojawi się okno UAC).", "Zainstaluj")) return;
+            var progress = new Progress<double>(p => UpdateStatus = $"Pobieranie… {p:P0}");
+            var path = await _updates.DownloadAsync(info, progress);
+            UpdateStatus = "Instaluję…";
+            if (_updates.LaunchInstaller(path)) Microsoft.UI.Xaml.Application.Current.Exit();
+            else UpdateStatus = "Instalacja anulowana (UAC).";
+        }
+        catch (Exception ex) when (ex is IOException or HttpRequestException)
+        { UpdateStatus = "Nie udało się pobrać aktualizacji: " + ex.Message; }
+        finally { UpdateBusy = false; }
+    }
 
     [RelayCommand] private void OpenDataFolder() => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(LogPath) { UseShellExecute = true });
 }

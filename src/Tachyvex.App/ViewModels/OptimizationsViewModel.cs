@@ -25,6 +25,10 @@ public sealed partial class TweakItemViewModel : ObservableObject
     private readonly DialogService _dialogs;
     private readonly AppContextService _ctx;
     private readonly Action<string> _notify;
+    private Action? _changed;
+
+    /// <summary>Wywoływane tylko po udanym zastosowaniu przez użytkownika (do animacji).</summary>
+    public event EventHandler? Applied;
 
     public TweakDefinition Tweak { get; }
 
@@ -32,11 +36,12 @@ public sealed partial class TweakItemViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _statusText = "";
 
-    public TweakItemViewModel(TweakDefinition t, TweakEngine engine, DialogService dialogs, AppContextService ctx, Action<string> notify)
+    public TweakItemViewModel(TweakDefinition t, TweakEngine engine, DialogService dialogs, AppContextService ctx, Action<string> notify, Action? changed = null)
     {
         Tweak = t; _engine = engine; _dialogs = dialogs; _ctx = ctx; _notify = notify;
         IsApplied = engine.IsApplied(t.Id);
         UpdateStatusText();
+        _changed = changed;
     }
 
     public string Title => Tweak.Title;
@@ -59,7 +64,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
     public Visibility BusyVisibility => IsBusy ? Visibility.Visible : Visibility.Collapsed;
     partial void OnIsBusyChanged(bool value) { OnPropertyChanged(nameof(IsIdle)); OnPropertyChanged(nameof(BusyVisibility)); }
 
-    partial void OnIsAppliedChanged(bool value) { OnPropertyChanged(nameof(ActionText)); UpdateStatusText(); }
+    partial void OnIsAppliedChanged(bool value) { OnPropertyChanged(nameof(ActionText)); UpdateStatusText(); _changed?.Invoke(); }
 
     private void UpdateStatusText() => StatusText = Tweak.IsAction ? "" : IsApplied ? "● Zastosowane" : "";
 
@@ -93,7 +98,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
             if (!ok) return;
         }
         var r = await _engine.ApplyAsync(Tweak.Id, _ctx.Current);
-        if (r.Success) IsApplied = true;
+        if (r.Success) { IsApplied = true; Applied?.Invoke(this, EventArgs.Empty); }
         await Report(r);
     }
 
@@ -110,6 +115,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
         var r = await _engine.RunActionAsync(Tweak.Id, _ctx.Current);
         if (r.Success && Tweak.ShowsResult) await _dialogs.InfoAsync(Tweak.Title, r.Message);
         else await Report(r);
+        if (r.Success) Applied?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task Report(TweakResult r)
@@ -137,15 +143,19 @@ public sealed partial class OptimizationsViewModel : ObservableObject
     [ObservableProperty] private string _statusMessage = "";
     [ObservableProperty] private bool _isRefreshing;
     [ObservableProperty] private string _counter = "";
+    [ObservableProperty] private int _appliedCount;
 
     public OptimizationsViewModel(TweakCatalog catalog, TweakEngine engine, DialogService dialogs, AppContextService ctx)
     {
         _engine = engine; _ctx = ctx;
-        _all = catalog.All.Select(t => new TweakItemViewModel(t, engine, dialogs, ctx, m => StatusMessage = m)).ToList();
+        _all = catalog.All.Select(t => new TweakItemViewModel(t, engine, dialogs, ctx, m => StatusMessage = m, Recount)).ToList();
+        Recount();
         ApplyFilter();
     }
 
     public IReadOnlyList<TweakItemViewModel> All => _all;
+
+    private void Recount() => AppliedCount = _all?.Count(i => !i.Tweak.IsAction && i.IsApplied) ?? 0;
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
     partial void OnCategoryIndexChanged(int value) => ApplyFilter();

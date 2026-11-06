@@ -7,6 +7,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -25,8 +26,21 @@
             </InfoBar.ActionButton>
         </InfoBar>
 
-        <NavigationView x:Name="Nav" Grid.Row="2" PaneDisplayMode="Left" IsSettingsVisible="False" IsBackButtonVisible="Collapsed"
+        <InfoBar x:Name="UpdateBar" Grid.Row="2" Severity="Informational" IsOpen="False" IsClosable="True" Margin="12,0,12,8" Title="Aktualizacja" />
+
+        <NavigationView x:Name="Nav" Grid.Row="3" PaneDisplayMode="Left" IsSettingsVisible="False" IsBackButtonVisible="Collapsed"
                         OpenPaneLength="220" SelectionChanged="OnSelectionChanged" Background="Transparent">
+            <NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="14,6,0,14">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="{StaticResource AccentGradientBrush}">
+                        <TextBlock Text="T" FontSize="20" FontWeight="Black" Foreground="#021018" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="TACHYVEX" FontWeight="Bold" CharacterSpacing="120" Foreground="{StaticResource TextBrush}" />
+                        <TextBlock x:Name="VersionLabel" FontSize="11" Foreground="{StaticResource MutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </NavigationView.PaneHeader>
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Panel" Tag="dashboard" Icon="Home" />
                 <NavigationViewItem Content="Gaming i profile" Tag="gaming" Icon="Play" />

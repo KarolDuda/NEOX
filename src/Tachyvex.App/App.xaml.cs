@@ -85,6 +85,7 @@ public partial class App : Application
         s.AddSingleton<WindowsServicesManager>();
         s.AddSingleton<StorageAnalyzer>();
         s.AddSingleton<FortniteConfigService>();
+        s.AddSingleton<UpdateService>();
         s.AddTransient<SystemMonitor>();
 
         // App
