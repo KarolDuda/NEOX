@@ -1,0 +1,66 @@
+<Page x:Class="Tachyvex.App.Pages.GamingPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Tachyvex.App.ViewModels" xmlns:core="using:Tachyvex.Core.State" xmlns:tw="using:Tachyvex.Windows">
+    <ScrollViewer>
+        <StackPanel Padding="28,8,28,28" Spacing="16">
+            <TextBlock Text="Gaming i profile" Style="{StaticResource PageTitleStyle}" />
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Profile optymalizacji" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="Wbudowane profile składają się wyłącznie z ustawień zalecanych i ostrożnych (bez usług, eksperymentalnych i wysokiego ryzyka). Zapisz własny profil z aktualnie zastosowanych zmian." Style="{StaticResource MutedTextStyle}" />
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Profiles}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="core:Profile">
+                                <Grid Margin="0,4" ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{x:Bind Description}" Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="Zastosuj" Style="{StaticResource AccentButtonStyleX}" Click="OnApply" Tag="{x:Bind}" />
+                                    <Button Grid.Column="2" Content="Usuń" Style="{StaticResource GhostButtonStyle}" Click="OnDelete" Tag="{x:Bind}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Zapisz zastosowane zmiany jako profil" Command="{x:Bind ViewModel.SaveCurrentAsProfileCommand}" Style="{StaticResource GhostButtonStyle}" />
+                        <ProgressRing IsActive="{x:Bind ViewModel.Busy, Mode=OneWay}" Width="20" Height="20" />
+                        <TextBlock Text="{x:Bind ViewModel.Message, Mode=OneWay}" VerticalAlignment="Center" Style="{StaticResource MutedTextStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Profil gry" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="Wskaż plik .exe gry. Ustawienia per gra (tryb pełnoekranowy, preferencja GPU) dotyczą tylko tego pliku." Style="{StaticResource MutedTextStyle}" />
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBox Text="{x:Bind ViewModel.GameExePath, Mode=TwoWay}" PlaceholderText="C:\Games\...\Gra.exe" />
+                        <Button Grid.Column="1" Content="Wybierz plik…" Click="OnPickExe" Style="{StaticResource GhostButtonStyle}" />
+                        <Button Grid.Column="2" Content="Wykryj gry Epic" Command="{x:Bind ViewModel.DetectGamesCommand}" Style="{StaticResource GhostButtonStyle}" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Games}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="tw:DetectedGame">
+                                <HyperlinkButton Content="{x:Bind Name}" Click="OnUseGame" Tag="{x:Bind}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.GameTweaks}" ItemTemplate="{StaticResource TweakTemplate}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Fortnite: ustawienia gry" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="Wyłącza V-Sync i HDR w GameUserSettings.ini. Wymaga zamkniętej gry; kopia zapasowa pliku powstaje przed zmianą." Style="{StaticResource MutedTextStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.FortniteInfo, Mode=OneWay}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Zastosuj" Command="{x:Bind ViewModel.FortniteApplyCommand}" Style="{StaticResource GhostButtonStyle}" />
+                        <Button Content="Przywróć z kopii" Command="{x:Bind ViewModel.FortniteRestoreCommand}" Style="{StaticResource GhostButtonStyle}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

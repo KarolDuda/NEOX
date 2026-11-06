@@ -1,0 +1,22 @@
+<Page x:Class="Tachyvex.App.Pages.SettingsPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="using:Tachyvex.App.ViewModels" xmlns:core="using:Tachyvex.Core.State" xmlns:tw="using:Tachyvex.Windows">
+    <ScrollViewer>
+        <StackPanel Padding="28,8,28,28" Spacing="16">
+            <TextBlock Text="Ustawienia" Style="{StaticResource PageTitleStyle}" />
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{x:Bind ViewModel.Version}" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.AdminStatus}" />
+                    <ToggleSwitch Header="Punkt przywracania przed zastosowaniem profilu (gdy dostępny)" IsOn="{x:Bind ViewModel.RestorePointBeforeProfiles, Mode=TwoWay}" />
+                    <Button Content="Otwórz folder danych i logów" Command="{x:Bind ViewModel.OpenDataFolderCommand}" Style="{StaticResource GhostButtonStyle}" HorizontalAlignment="Left" />
+                    <TextBlock Text="{x:Bind ViewModel.LogPath}" Style="{StaticResource MutedTextStyle}" IsTextSelectionEnabled="True" />
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Zasady bezpieczeństwa" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Style="{StaticResource MutedTextStyle}" Text="• Program nie wyłącza Windows Defendera ani Windows Update.&#x0a;• Każda zmiana ma kopię zapasową stanu sprzed zmiany i da się ją cofnąć.&#x0a;• Zmiany wysokiego ryzyka i eksperymentalne wymagają osobnego potwierdzenia.&#x0a;• Zmiana jest weryfikowana odczytem; jeśli system jej nie przyjął, poprzedni stan jest przywracany.&#x0a;• Etykiety efektu ze starej wersji nie są prezentowane jako pomiar, a program nie obiecuje wzrostu FPS." />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
