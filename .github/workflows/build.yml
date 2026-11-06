@@ -39,7 +39,16 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          Get-ChildItem -Path "$env:PROJECT_ROOT\src\Tachyvex.App\obj" -Recurse -Filter output.json | ForEach-Object { Write-Host "== $($_.FullName)"; Get-Content $_.FullName -Raw }
+          $obj = Get-ChildItem -Path "$env:PROJECT_ROOT\src\Tachyvex.App\obj" -Recurse -Filter input.json | Select-Object -First 1
+          Write-Host "input: $($obj.FullName)"
+          $dir = $obj.DirectoryName
+          $xc = Get-ChildItem "$env:USERPROFILE\.nuget\packages\microsoft.windowsappsdk.winui" -Recurse -Filter XamlCompiler.exe | Select-Object -First 1
+          Write-Host "compiler: $($xc.FullName)"
+          $out = & $xc.FullName "$dir\input.json" "$dir\diag-output.json" 2>&1
+          Write-Host "exit: $LASTEXITCODE"
+          $out | ForEach-Object { Write-Host $_ }
+          if (Test-Path "$dir\diag-output.json") { Get-Content "$dir\diag-output.json" -Raw }
+          Get-ChildItem $dir -Filter *.log -Recurse | ForEach-Object { Write-Host "== $($_.FullName)"; Get-Content $_.FullName -Raw }
 
       - name: Zainstaluj Inno Setup
         shell: pwsh
