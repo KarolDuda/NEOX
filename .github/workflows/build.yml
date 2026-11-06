@@ -48,6 +48,7 @@ jobs:
           Write-Host "exit: $LASTEXITCODE"
           $out | ForEach-Object { Write-Host $_ }
           if (Test-Path "$dir\diag-output.json") { Get-Content "$dir\diag-output.json" -Raw }
+          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=2} -MaxEvents 5 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host '== EVENT'; Write-Host $_.Message }
           Get-ChildItem $dir -Filter *.log -Recurse | ForEach-Object { Write-Host "== $($_.FullName)"; Get-Content $_.FullName -Raw }
 
       - name: Zainstaluj Inno Setup
