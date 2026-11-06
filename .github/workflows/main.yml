@@ -17,26 +17,45 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Znajdź projekt (działa też, gdy pliki leżą w podfolderze)
+        shell: pwsh
+        run: |
+          $csproj = Get-ChildItem -Path . -Recurse -Filter Tachyvex.App.csproj | Select-Object -First 1
+          if (-not $csproj) {
+            Write-Host "Nie znaleziono Tachyvex.App.csproj. Zawartość repozytorium:"
+            Get-ChildItem -Recurse -Depth 3 | Select-Object -First 80 FullName
+            throw "W repozytorium brakuje folderu src/Tachyvex.App. Wgraj wszystkie foldery projektu."
+          }
+          $root = $csproj.Directory.Parent.Parent.FullName
+          Write-Host "Katalog główny projektu: $root"
+          "PROJECT_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          if (-not (Test-Path "$root\installer\tachyvex.iss")) { throw "Brakuje installer\tachyvex.iss" }
+
       - name: Publikuj aplikację (x64, self-contained)
-        run: dotnet publish src/Tachyvex.App/Tachyvex.App.csproj -c Release -r win-x64 --self-contained true -o publish
+        shell: pwsh
+        run: dotnet publish "$env:PROJECT_ROOT\src\Tachyvex.App\Tachyvex.App.csproj" -c Release -r win-x64 --self-contained true -o "$env:PROJECT_ROOT\publish"
 
       - name: Zainstaluj Inno Setup
+        shell: pwsh
         run: choco install innosetup -y --no-progress
 
       - name: Zbuduj instalator
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\tachyvex.iss'
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "$env:PROJECT_ROOT\installer\tachyvex.iss"'
 
       - name: Opublikuj instalator w Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.0.${{ github.run_number }}
           name: TACHYVEX 2.0 (build ${{ github.run_number }})
-          files: installer/output/TACHYVEX_Setup.exe
+          files: |
+            **/TACHYVEX_Setup.exe
           body: Pobierz TACHYVEX_Setup.exe i uruchom. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji, Uruchom mimo to).
 
       - name: Testy (nie blokują instalatora)
         if: always()
         continue-on-error: true
+        shell: pwsh
         run: |
-          dotnet test tests/Tachyvex.Tests -c Release
-          dotnet test tests/Tachyvex.Tests.Windows -c Release
+          dotnet test "$env:PROJECT_ROOT\tests\Tachyvex.Tests" -c Release
+          dotnet test "$env:PROJECT_ROOT\tests\Tachyvex.Tests.Windows" -c Release
