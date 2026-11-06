@@ -8,7 +8,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Styles/Theme.xaml" />
-                <ResourceDictionary Source="Styles/Templates.xaml" />
+                <styles:Templates xmlns:styles="using:Tachyvex.App.Styles" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
