@@ -35,6 +35,12 @@ jobs:
         shell: pwsh
         run: dotnet publish "$env:PROJECT_ROOT\src\Tachyvex.App\Tachyvex.App.csproj" -c Release -r win-x64 --self-contained true -o "$env:PROJECT_ROOT\publish"
 
+      - name: Diagnostyka kompilatora XAML (tylko przy błędzie)
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path "$env:PROJECT_ROOT\src\Tachyvex.App\obj" -Recurse -Filter output.json | ForEach-Object { Write-Host "== $($_.FullName)"; Get-Content $_.FullName -Raw }
+
       - name: Zainstaluj Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
