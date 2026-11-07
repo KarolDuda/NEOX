@@ -57,7 +57,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     private readonly OptimizationsViewModel _opt;
     private readonly IStateStore _store;
-    private readonly HealthProbe _health;
+    private readonly HealthProbe _probe;
 
     [ObservableProperty] private int _healthScore;
     [ObservableProperty] private string _healthLabel = "Sprawdzam…";
@@ -75,7 +75,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     public DashboardViewModel(SystemMonitor monitor, ProfileService profiles, TweakEngine engine, IRestorePointService restore, DialogService dialogs, AppContextService ctx, OptimizationsViewModel opt, IStateStore store, HealthProbe health)
     {
-        _health = health;
+        _probe = health;
         _monitor = monitor; _profiles = profiles; _engine = engine; _restore = restore; _dialogs = dialogs; _ctx = ctx; _opt = opt; _store = store;
         AppliedCount = store.State.Snapshots.Count;
         _monitor.SampleReady += OnSample;
@@ -119,7 +119,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var r = await _health.ScanAsync();
+            var r = await _probe.ScanAsync();
             HealthChecks.Clear();
             foreach (var c in r.Checks)
                 HealthChecks.Add(new HealthRow(c.Name, c.Detail, c.Ok ? "✔" : c.Score >= 0.5 ? "!" : "✖", c.Fix, FixLabel(c.Fix),
