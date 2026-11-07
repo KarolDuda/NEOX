@@ -15,10 +15,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <TieredPGO>true</TieredPGO>
     <ApplicationIcon>Assets\tachyvex.ico</ApplicationIcon>
-   <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-<Version>2.0.0</Version>
-<Company>SpinPrint</Company>
-<Authors>SpinPrint</Authors>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>2.0.0</Version>
     <Product>TACHYVEX</Product>
   </PropertyGroup>
   <ItemGroup>
