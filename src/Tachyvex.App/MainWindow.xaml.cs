@@ -27,7 +27,47 @@ public sealed partial class MainWindow : Window
         AdminBar.IsOpen = !App.Get<IElevationService>().IsElevated;
         VersionLabel.Text = "wersja " + UpdateService.Current;
         Nav.SelectedItem = Nav.MenuItems[0];
+        Splash.OpacityTransition = new ScalarTransition { Duration = TimeSpan.FromMilliseconds(500) };
+        ((FrameworkElement)Content).Loaded += async (_, _) => await RunIntroAsync();
         _ = AutoUpdateAsync();
+    }
+
+    private bool _skipIntro;
+    private void OnSplashTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) => _skipIntro = true;
+
+    /// <summary>Krótkie intro (ok. 2 s, pomijalne kliknięciem), a przy pierwszym uruchomieniu propozycja Auto-Tune.</summary>
+    private async Task RunIntroAsync()
+    {
+        try
+        {
+            Fx.Pop(SplashLogo, 0);
+            Fx.Ripple(SplashWave1, 250, 1300, 2.3f);
+            Fx.Ripple(SplashWave2, 600, 1300, 2.9f);
+            Fx.SlideIn(SplashTitle, 16, 350, 650);
+            Fx.SlideIn(SplashTag, 10, 650, 650);
+            for (var i = 0; i <= 20 && !_skipIntro; i++) { SplashBar.Value = i * 5; await Task.Delay(65); }
+        }
+        catch (Exception ex) { App.Get<ILogger<MainWindow>>().LogInformation(ex, "Intro pominięte"); }
+        Splash.Opacity = 0;
+        await Task.Delay(550);
+        Splash.Visibility = Visibility.Collapsed;
+
+        var store = App.Get<IStateStore>();
+        if (!store.State.Settings.FirstRunDone)
+        {
+            store.State.Settings.FirstRunDone = true;
+            await store.SaveAsync();
+            var go = await App.Get<DialogService>().ConfirmAsync("Witaj w TACHYVEX",
+                "Auto-Tune przeskanuje Twój komputer i dobierze bezpieczne optymalizacje. Zobaczysz plan przed startem, a wszystko cofniesz jednym przyciskiem.\n\nChcesz go teraz otworzyć?", "Otwórz Auto-Tune");
+            if (go) Navigate("autotune");
+        }
+    }
+
+    /// <summary>Przechodzi do strony po etykiecie (używane z kart na Panelu).</summary>
+    public void Navigate(string tag)
+    {
+        var item = Nav.MenuItems.Concat(Nav.FooterMenuItems).OfType<NavigationViewItem>().FirstOrDefault(i => i.Tag as string == tag);
+        if (item is not null) Nav.SelectedItem = item;
     }
 
     private void OnSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -39,6 +79,7 @@ public sealed partial class MainWindow : Window
     private static Type PageFor(string tag) => tag switch
         {
             "dashboard" => typeof(DashboardPage),
+            "autotune" => typeof(AutoTunePage),
             "gaming" => typeof(GamingPage),
             "optimizations" => typeof(OptimizationsPage),
             "network" => typeof(NetworkPage),

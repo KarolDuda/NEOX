@@ -23,3 +23,10 @@ installer/              Inno Setup
 docs/                   architektura, plan testów
 ```
 Logi: `%LOCALAPPDATA%\Tachyvex\logs`, stan i kopie zapasowe: `%LOCALAPPDATA%\Tachyvex\state.json`.
+
+## Auto-Tune, zdrowie systemu i Game Boost
+
+- **Auto-Tune** skanuje sprzęt (laptop/desktop, RAM, SSD, GPU), dobiera wyłącznie bezpieczne zmiany (zalecane i ostrożne, bez usług), pokazuje plan z uzasadnieniem, opcjonalnie mierzy komputer przed i po (CPU, RAM, opóźnienie timera; zmiany poniżej progu szumu nie są podawane jako poprawa) i cofa wszystko jednym przyciskiem. To nie jest obietnica FPS.
+- **Zdrowie systemu** (Panel): wynik 0–100 z jawnych reguł (dysk, restart, autostart, zastosowane optymalizacje, RAM) z przyciskami „Napraw”.
+- **Game Boost**: na czas działania gry z listy przełącza plan zasilania i priorytet procesu; poprzedni plan zapisany w `state.json`, więc wraca nawet po awarii.
+- **Eksport/import profili** (JSON). Import jest walidowany: odrzuca nieznane, usługi, eksperymentalne i wysokiego ryzyka.

@@ -5,7 +5,9 @@ using Serilog;
 using Tachyvex.App.Services;
 using Tachyvex.App.ViewModels;
 using Tachyvex.Core.Abstractions;
+using Tachyvex.Core.AutoTune;
 using Tachyvex.Core.Catalog;
+using Tachyvex.Core.Health;
 using Tachyvex.Core.Engine;
 using Tachyvex.Core.Profiles;
 using Tachyvex.Core.State;
@@ -38,6 +40,9 @@ public partial class App : Application
         {
             Services = BuildServices();
             await Services.GetRequiredService<IStateStore>().LoadAsync();
+            var boost = Services.GetRequiredService<GameBoostService>();
+            if (Services.GetRequiredService<IStateStore>().State.Settings.GameBoost) boost.Start();
+            else _ = boost.RestoreAsync(); // po awarii przywróć plan zasilania zapisany przed grą
         }
         catch (Exception ex)
         {
@@ -64,6 +69,9 @@ public partial class App : Application
         s.AddSingleton<IStateStore>(sp => new JsonStateStore(JsonStateStore.DefaultPath(), sp.GetRequiredService<ILogger<JsonStateStore>>()));
         s.AddSingleton<TweakEngine>();
         s.AddSingleton<ProfileService>();
+        s.AddSingleton<ProfileTransfer>();
+        s.AddSingleton<AutoTunePlanner>();
+        s.AddSingleton<AutoTuneService>();
 
         // Windows
         s.AddSingleton<IProcessRunner, ProcessRunner>();
@@ -86,6 +94,10 @@ public partial class App : Application
         s.AddSingleton<StorageAnalyzer>();
         s.AddSingleton<FortniteConfigService>();
         s.AddSingleton<UpdateService>();
+        s.AddSingleton<IHardwareScanner, HardwareScanner>();
+        s.AddSingleton<IBenchmarkSuite, BenchmarkSuite>();
+        s.AddSingleton<HealthProbe>();
+        s.AddSingleton<GameBoostService>();
         s.AddTransient<SystemMonitor>();
 
         // App
@@ -93,6 +105,7 @@ public partial class App : Application
         s.AddSingleton<AppContextService>();
         s.AddSingleton<OptimizationsViewModel>();
         s.AddTransient<DashboardViewModel>();
+        s.AddTransient<AutoTuneViewModel>();
         s.AddTransient<GamingViewModel>();
         s.AddTransient<NetworkViewModel>();
         s.AddTransient<SystemViewModel>();

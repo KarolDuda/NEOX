@@ -43,6 +43,9 @@
             </NavigationView.PaneHeader>
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Panel" Tag="dashboard" Icon="Home" />
+                <NavigationViewItem Content="Auto-Tune" Tag="autotune">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE945;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="Gaming i profile" Tag="gaming" Icon="Play" />
                 <NavigationViewItem Content="Optymalizacje" Tag="optimizations" Icon="Admin" />
                 <NavigationViewItem Content="Sieć" Tag="network" Icon="World" />
@@ -56,5 +59,21 @@
             </NavigationView.FooterMenuItems>
             <Frame x:Name="ContentFrame" Margin="0,0,0,0" />
         </NavigationView>
+
+        <!-- INTRO -->
+        <Grid x:Name="Splash" Grid.RowSpan="4" Background="#FF05070D" Tapped="OnSplashTapped">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <Grid Width="120" Height="120" HorizontalAlignment="Center">
+                    <Ellipse x:Name="SplashWave1" Stroke="{StaticResource AccentBrush}" StrokeThickness="2" Opacity="0" />
+                    <Ellipse x:Name="SplashWave2" Stroke="{StaticResource GoodBrush}" StrokeThickness="1.5" Opacity="0" />
+                    <Border x:Name="SplashLogo" Width="84" Height="84" CornerRadius="24" Background="{StaticResource AccentGradientBrush}" Opacity="0">
+                        <TextBlock Text="T" FontSize="52" FontWeight="Black" Foreground="#021018" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+                <TextBlock x:Name="SplashTitle" Text="TACHYVEX" FontSize="38" FontWeight="Bold" CharacterSpacing="450" HorizontalAlignment="Center" Foreground="{StaticResource TextBrush}" Opacity="0" />
+                <TextBlock x:Name="SplashTag" Text="OPTYMALIZACJA BEZ ZGADYWANIA" FontSize="11" CharacterSpacing="300" HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}" Opacity="0" />
+                <ProgressBar x:Name="SplashBar" Width="220" Height="3" Minimum="0" Maximum="100" Value="0" Foreground="{StaticResource AccentBrush}" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

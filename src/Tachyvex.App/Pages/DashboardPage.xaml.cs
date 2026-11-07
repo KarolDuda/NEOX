@@ -17,11 +17,11 @@ public sealed partial class DashboardPage : Page
     {
         InitializeComponent();
         DataContext = ViewModel;
-        foreach (var c in new FrameworkElement[] { CardCpu, CardRam, CardGpu, CardHw }) Fx.Hover(c, 1.01f);
+        foreach (var c in new FrameworkElement[] { CardCpu, CardRam, CardGpu, CardHealth, CardHw }) Fx.Hover(c, 1.01f);
         Loaded += (_, _) =>
         {
             var i = 0;
-            foreach (var e in new UIElement[] { Hero, CardCpu, CardRam, CardGpu, CardHw }) Fx.SlideIn(e, 22, 70 * i++);
+            foreach (var e in new UIElement[] { Hero, CardCpu, CardRam, CardGpu, CardHealth, CardHw }) Fx.SlideIn(e, 22, 70 * i++);
             Fx.Breathe(BoostGlow);
         };
     }
@@ -43,12 +43,41 @@ public sealed partial class DashboardPage : Page
         Fx.Ripple(Wave2, 350, 1100, 1.9f);
     }
 
+    private DispatcherTimer? _countTimer;
+
+    /// <summary>Licznik 0 → wynik z łagodnym wyhamowaniem.</summary>
+    private void OnHealthComputed(int target)
+    {
+        _countTimer?.Stop();
+        var start = DateTime.UtcNow;
+        const double ms = 1300;
+        _countTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _countTimer.Tick += (_, _) =>
+        {
+            var t = Math.Min(1.0, (DateTime.UtcNow - start).TotalMilliseconds / ms);
+            var eased = 1 - Math.Pow(1 - t, 3);
+            var v = target * eased;
+            ScoreRing.Value = v;
+            ScoreText.Text = ((int)Math.Round(v)).ToString();
+            if (t >= 1.0) _countTimer?.Stop();
+        };
+        _countTimer.Start();
+    }
+
+    private async void OnFix(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: HealthRow row }) await ViewModel.FixCommand.ExecuteAsync(row);
+    }
+
+    private void OnGoAutoTune(object sender, RoutedEventArgs e) => App.MainWindow?.Navigate("autotune");
+
     private void OnCloseOverlay(object sender, RoutedEventArgs e) => Overlay.Visibility = Visibility.Collapsed;
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
         ViewModel.ProfileApplied += OnProfileApplied;
+        ViewModel.HealthComputed += OnHealthComputed;
         await ViewModel.OnShownAsync();
     }
 
@@ -56,6 +85,8 @@ public sealed partial class DashboardPage : Page
     {
         base.OnNavigatedFrom(e);
         ViewModel.ProfileApplied -= OnProfileApplied;
+        ViewModel.HealthComputed -= OnHealthComputed;
+        _countTimer?.Stop();
         Fx.StopBreathe(BoostGlow);
         ViewModel.Dispose();
     }

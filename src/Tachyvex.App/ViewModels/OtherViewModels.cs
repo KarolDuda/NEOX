@@ -5,6 +5,8 @@ using Microsoft.UI.Dispatching;
 using Tachyvex.App.Services;
 using Tachyvex.Core.Abstractions;
 using Tachyvex.Core.Catalog;
+using Tachyvex.Core.Health;
+using Microsoft.UI.Xaml;
 using Tachyvex.Core.Engine;
 using Tachyvex.Core.Models;
 using Tachyvex.Core.Profiles;
@@ -25,6 +27,8 @@ public static class Fmt
         _ => $"{b / 1024.0:F0} KB"
     };
 }
+
+public sealed record HealthRow(string Name, string Detail, string Mark, FixKind Fix, string FixText, Visibility FixVisibility);
 
 // ---------------- Panel ----------------
 public sealed partial class DashboardViewModel : ObservableObject, IDisposable
@@ -53,6 +57,13 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     private readonly OptimizationsViewModel _opt;
     private readonly IStateStore _store;
+    private readonly HealthProbe _health;
+
+    [ObservableProperty] private int _healthScore;
+    [ObservableProperty] private string _healthLabel = "Sprawdzam…";
+    public ObservableCollection<HealthRow> HealthChecks { get; } = new();
+    /// <summary>Wynik zdrowia gotowy: strona animuje licznik od 0.</summary>
+    public event Action<int>? HealthComputed;
 
     public bool IsIdle => !Busy;
     partial void OnBusyChanged(bool value) => OnPropertyChanged(nameof(IsIdle));
@@ -62,8 +73,9 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<Profile> Profiles { get; } = new();
 
-    public DashboardViewModel(SystemMonitor monitor, ProfileService profiles, TweakEngine engine, IRestorePointService restore, DialogService dialogs, AppContextService ctx, OptimizationsViewModel opt, IStateStore store)
+    public DashboardViewModel(SystemMonitor monitor, ProfileService profiles, TweakEngine engine, IRestorePointService restore, DialogService dialogs, AppContextService ctx, OptimizationsViewModel opt, IStateStore store, HealthProbe health)
     {
+        _health = health;
         _monitor = monitor; _profiles = profiles; _engine = engine; _restore = restore; _dialogs = dialogs; _ctx = ctx; _opt = opt; _store = store;
         AppliedCount = store.State.Snapshots.Count;
         _monitor.SampleReady += OnSample;
@@ -100,6 +112,47 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             return (hw, health);
         });
         Hardware = info.hw; Health = info.health;
+        await RefreshHealthAsync();
+    }
+
+    public async Task RefreshHealthAsync()
+    {
+        try
+        {
+            var r = await _health.ScanAsync();
+            HealthChecks.Clear();
+            foreach (var c in r.Checks)
+                HealthChecks.Add(new HealthRow(c.Name, c.Detail, c.Ok ? "✔" : c.Score >= 0.5 ? "!" : "✖", c.Fix, FixLabel(c.Fix),
+                    c.Fix == FixKind.None ? Visibility.Collapsed : Visibility.Visible));
+            HealthScore = r.Score; HealthLabel = r.Label;
+            HealthComputed?.Invoke(r.Score);
+        }
+        catch (Exception ex) { HealthLabel = "Nie udało się ocenić systemu: " + ex.Message; }
+    }
+
+    private static string FixLabel(FixKind k) => k switch
+    {
+        FixKind.ApplySafeProfile => "Napraw",
+        FixKind.OpenStartup => "Przejdź do autostartu",
+        FixKind.OpenDisk => "Przejdź do dysku",
+        FixKind.Restart => "Jak to zrobić",
+        _ => "",
+    };
+
+    [RelayCommand]
+    private async Task FixAsync(HealthRow row)
+    {
+        switch (row.Fix)
+        {
+            case FixKind.ApplySafeProfile:
+                if (Profiles.FirstOrDefault(x => x.Id == "builtin.safe") is { } p) { await ApplyProfileAsync(p); await RefreshHealthAsync(); }
+                break;
+            case FixKind.OpenStartup: App.MainWindow?.Navigate("managers"); break;
+            case FixKind.OpenDisk: App.MainWindow?.Navigate("disk"); break;
+            case FixKind.Restart:
+                await _dialogs.InfoAsync("Restart komputera", "Zapisz pracę i uruchom komputer ponownie (Start → Zasilanie → Uruchom ponownie). Nie robimy tego za Ciebie bez pytania.");
+                break;
+        }
     }
 
     public void OnHidden() => _monitor.Stop();
@@ -157,6 +210,12 @@ public sealed partial class GamingViewModel : ObservableObject
     private readonly AppContextService _ctx;
     private readonly TweakEngine _engine;
     private readonly FortniteConfigService _fn;
+    private readonly ProfileTransfer _transfer;
+    private readonly GameBoostService _boost;
+    private readonly DispatcherQueue _uiq = DispatcherQueue.GetForCurrentThread();
+
+    [ObservableProperty] private bool _gameBoost;
+    [ObservableProperty] private string _boostStatus = "";
 
     public OptimizationsViewModel Optimizations { get; }
     public ObservableCollection<Profile> Profiles { get; } = new();
@@ -169,8 +228,11 @@ public sealed partial class GamingViewModel : ObservableObject
     [ObservableProperty] private bool _busy;
 
     public GamingViewModel(ProfileService profiles, IStateStore store, DialogService dialogs, AppContextService ctx, TweakEngine engine,
-        OptimizationsViewModel optimizations, FortniteConfigService fn)
+        OptimizationsViewModel optimizations, FortniteConfigService fn, ProfileTransfer transfer, GameBoostService boost)
     {
+        _transfer = transfer; _boost = boost;
+        _gameBoost = store.State.Settings.GameBoost;
+        _boostStatus = boost.Status;
         _profiles = profiles; _store = store; _dialogs = dialogs; _ctx = ctx; _engine = engine; _fn = fn; Optimizations = optimizations;
         GameExePath = store.State.Settings.GameExePath ?? "";
         Reload();
@@ -184,6 +246,30 @@ public sealed partial class GamingViewModel : ObservableObject
         FortniteInfo = !_fn.Exists ? "Nie znaleziono pliku ustawień Fortnite."
             : _fn.PendingChanges().Count > 0 ? "Do zmiany: " + string.Join(", ", _fn.PendingChanges())
             : "V-Sync i HDR już wyłączone.";
+    }
+
+    partial void OnGameBoostChanged(bool value)
+    {
+        _store.State.Settings.GameBoost = value;
+        _ = _store.SaveAsync();
+        if (value) _boost.Start(); else _ = _boost.StopAsync();
+    }
+
+    private void OnBoostStatus(string s) => _uiq.TryEnqueue(() => BoostStatus = s);
+    public void Attach() { _boost.StatusChanged += OnBoostStatus; BoostStatus = _boost.Status; }
+    public void Detach() => _boost.StatusChanged -= OnBoostStatus;
+
+    public string ExportJson(Profile p) => _transfer.Export(p);
+
+    public async Task ImportJsonAsync(string json)
+    {
+        var r = _transfer.Import(json);
+        if (!r.Success) { Message = "Import nieudany: " + r.Error; return; }
+        _store.State.CustomProfiles.Add(r.Profile!);
+        await _store.SaveAsync();
+        Reload();
+        Message = $"Zaimportowano profil „{r.Profile!.Name}” ({r.Profile.TweakIds.Count} zmian)."
+                  + (r.Dropped > 0 ? $" Pominięto {r.Dropped} niedozwolonych lub nieznanych pozycji." : "");
     }
 
     partial void OnGameExePathChanged(string value)

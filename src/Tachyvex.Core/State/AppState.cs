@@ -44,6 +44,11 @@ public sealed class AppSettings
     public bool CreateRestorePointBeforeProfiles { get; set; } = true;
     public bool AutoUpdate { get; set; } = true;
     public string? GameExePath { get; set; }
+    public bool FirstRunDone { get; set; }
+    public bool GameBoost { get; set; }
+    /// <summary>GUID planu zasilania do przywrócenia po grze (zapisany, by przetrwać awarię).</summary>
+    public string? GameBoostRestoreScheme { get; set; }
+    public DateTimeOffset? LastAutoTune { get; set; }
 }
 
 /// <summary>Cały trwały stan aplikacji. Zapisywany w %LOCALAPPDATA%\Tachyvex\state.json.</summary>

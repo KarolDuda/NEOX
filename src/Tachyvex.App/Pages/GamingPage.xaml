@@ -10,22 +10,33 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="core:Profile">
                                 <Grid Margin="0,4" ColumnSpacing="10">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <StackPanel>
                                         <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" />
                                         <TextBlock Text="{x:Bind Description}" Style="{StaticResource MutedTextStyle}" />
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="Zastosuj" Style="{StaticResource AccentButtonStyleX}" Click="OnApply" Tag="{x:Bind}" />
-                                    <Button Grid.Column="2" Content="Usuń" Style="{StaticResource GhostButtonStyle}" Click="OnDelete" Tag="{x:Bind}" />
+                                    <Button Grid.Column="2" Content="Eksportuj" Style="{StaticResource GhostButtonStyle}" Click="OnExport" Tag="{x:Bind}" />
+                                    <Button Grid.Column="3" Content="Usuń" Style="{StaticResource GhostButtonStyle}" Click="OnDelete" Tag="{x:Bind}" />
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <StackPanel Orientation="Horizontal" Spacing="12">
                         <Button Content="Zapisz zastosowane zmiany jako profil" Command="{x:Bind ViewModel.SaveCurrentAsProfileCommand}" Style="{StaticResource GhostButtonStyle}" />
+                        <Button Content="Importuj profil…" Click="OnImport" Style="{StaticResource GhostButtonStyle}" />
                         <ProgressRing IsActive="{x:Bind ViewModel.Busy, Mode=OneWay}" Width="20" Height="20" />
                         <TextBlock Text="{x:Bind ViewModel.Message, Mode=OneWay}" VerticalAlignment="Center" Style="{StaticResource MutedTextStyle}" />
                     </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Game Boost" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="Gdy uruchomisz grę z listy (wskazaną poniżej lub wykrytą), TACHYVEX przełączy plan zasilania na wysoką wydajność i podniesie priorytet gry. Po zamknięciu gry wszystko wraca. Poprzedni plan jest zapisany na dysku, więc wróci nawet po awarii programu." Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                    <ToggleSwitch Header="Włącz Game Boost" IsOn="{x:Bind ViewModel.GameBoost, Mode=TwoWay}" OnContent="Włączony" OffContent="Wyłączony" />
+                    <TextBlock Text="{x:Bind ViewModel.BoostStatus, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />
                 </StackPanel>
             </Border>
 
