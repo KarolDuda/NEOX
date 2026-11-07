@@ -9,7 +9,12 @@
 AppId={{B3F6C2A1-5D4E-4C7A-9E21-7A1F0C5D8E42}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-AppPublisher=TACHYVEX
+AppPublisher=spinprint
+AppPublisherURL=https://spinprint.pl
+AppSupportURL=https://spinprint.pl
+AppCopyright=© spinprint (spinprint.pl)
+VersionInfoCompany=spinprint
+VersionInfoProductName=TACHYVEX
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes

@@ -18,6 +18,10 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Version>2.0.0</Version>
     <Product>TACHYVEX</Product>
+    <Authors>spinprint</Authors>
+    <Company>spinprint</Company>
+    <Copyright>© spinprint (spinprint.pl)</Copyright>
+    <PackageProjectUrl>https://spinprint.pl</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />

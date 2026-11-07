@@ -23,6 +23,14 @@
                     <TextBlock Style="{StaticResource MutedTextStyle}" Text="• Program nie wyłącza Windows Defendera ani Windows Update.&#x0a;• Każda zmiana ma kopię zapasową stanu sprzed zmiany i da się ją cofnąć.&#x0a;• Zmiany wysokiego ryzyka i eksperymentalne wymagają osobnego potwierdzenia.&#x0a;• Zmiana jest weryfikowana odczytem; jeśli system jej nie przyjął, poprzedni stan jest przywracany.&#x0a;• Etykiety efektu ze starej wersji nie są prezentowane jako pomiar, a program nie obiecuje wzrostu FPS." />
                 </StackPanel>
             </Border>
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="O programie" Style="{StaticResource SectionTitleStyle}" />
+                    <TextBlock Text="TACHYVEX" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource MutedTextStyle}" Text="Autor i wydawca: spinprint" />
+                    <HyperlinkButton Content="spinprint.pl" NavigateUri="https://spinprint.pl" Padding="0" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
