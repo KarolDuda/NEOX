@@ -191,7 +191,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Busy = true;
         try
         {
-            var r = await _restore.CreateAsync("TACHYVEX", CancellationToken.None);
+            var r = await _restore.CreateAsync("NEOX", CancellationToken.None);
             Message = r.Message;
             if (!r.Success) await _dialogs.InfoAsync("Punkt przywracania", r.Message + "\n\nWymaga administratora i włączonej ochrony systemu (limit: 1 punkt na 24 h).");
         }
@@ -578,7 +578,7 @@ public sealed partial class HistoryViewModel : ObservableObject
     private async Task RevertAllAsync()
     {
         if (_store.State.Snapshots.Count == 0) { Message = "Nie ma czego cofać."; return; }
-        if (!await _dialogs.ConfirmAsync("Cofnij wszystkie zmiany", $"Przywrócić poprzednie ustawienia dla {_store.State.Snapshots.Count} zmian wprowadzonych przez TACHYVEX?", "Cofnij wszystko")) return;
+        if (!await _dialogs.ConfirmAsync("Cofnij wszystkie zmiany", $"Przywrócić poprzednie ustawienia dla {_store.State.Snapshots.Count} zmian wprowadzonych przez NEOX?", "Cofnij wszystko")) return;
         Busy = true;
         try { var n = await _profiles.RevertAllAsync(_ctx.Current); Message = $"Cofnięto: {n}. Pozostało: {_store.State.Snapshots.Count} (wymagają administratora lub nie udało się ich cofnąć)."; }
         finally { Busy = false; }
@@ -625,8 +625,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _updateStatus = "";
     [ObservableProperty] private bool _updateBusy;
     public string AdminStatus => _elev.IsElevated ? "Uruchomiono jako administrator." : "Tryb standardowy: zmiany wymagające administratora są zablokowane.";
-    public string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tachyvex");
-    public string Version => $"TACHYVEX {UpdateService.Current} (WinUI 3, .NET 10)";
+    public string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Neox");
+    public string Version => $"NEOX {UpdateService.Current} (WinUI 3, .NET 10)";
 
     public SettingsViewModel(IStateStore store, IElevationService elev, UpdateService updates, DialogService dialogs)
     {

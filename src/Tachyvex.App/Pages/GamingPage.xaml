@@ -34,7 +34,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Game Boost" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Text="Gdy uruchomisz grę z listy (wskazaną poniżej lub wykrytą), TACHYVEX przełączy plan zasilania na wysoką wydajność i podniesie priorytet gry. Po zamknięciu gry wszystko wraca. Poprzedni plan jest zapisany na dysku, więc wróci nawet po awarii programu." Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="Gdy uruchomisz grę z listy (wskazaną poniżej lub wykrytą), NEOX przełączy plan zasilania na wysoką wydajność i podniesie priorytet gry. Po zamknięciu gry wszystko wraca. Poprzedni plan jest zapisany na dysku, więc wróci nawet po awarii programu." Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
                     <ToggleSwitch Header="Włącz Game Boost" IsOn="{x:Bind ViewModel.GameBoost, Mode=TwoWay}" OnContent="Włączony" OffContent="Wyłączony" />
                     <TextBlock Text="{x:Bind ViewModel.BoostStatus, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />
                 </StackPanel>

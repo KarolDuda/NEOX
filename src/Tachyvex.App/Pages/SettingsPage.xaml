@@ -26,7 +26,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="4">
                     <TextBlock Text="O programie" Style="{StaticResource SectionTitleStyle}" />
-                    <TextBlock Text="TACHYVEX" FontWeight="SemiBold" />
+                    <TextBlock Text="NEOX" FontWeight="SemiBold" />
                     <TextBlock Style="{StaticResource MutedTextStyle}" Text="Autor i wydawca: spinprint" />
                     <HyperlinkButton Content="spinprint.pl" NavigateUri="https://spinprint.pl" Padding="0" />
                 </StackPanel>

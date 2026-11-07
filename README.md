@@ -1,10 +1,10 @@
-# TACHYVEX 2.0: optymalizator Windows (C# · .NET 10 · WinUI 3)
+# NEOX 2.0: optymalizator Windows (C# · .NET 10 · WinUI 3)
 
 Aplikacja do optymalizacji Windows 10/11 pod gry: 253 ustawienia z opisem korzyści i skutków, profile jednym kliknięciem, cofanie każdej zmiany, sieć, monitoring, menedżery startu / usług / procesów, analiza dysku.
 
 ## Instalator (gotowy plik, bez budowania u siebie)
 1. Utwórz prywatne repozytorium na github.com i wgraj całą zawartość tego folderu (razem z ukrytym `.github`) na gałąź `main`.
-2. Workflow **Build and test TACHYVEX** uruchomi się sam (ok. 5–8 min). Gotowy `TACHYVEX_Setup.exe` pojawi się w **Releases** repozytorium.
+2. Workflow **Build and test NEOX** uruchomi się sam (ok. 5–8 min). Gotowy `Neox_Setup.exe` pojawi się w **Releases** repozytorium.
 3. Pobierz, uruchom, zainstaluj. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji → Uruchom mimo to).
 
 ## Bezpieczeństwo
@@ -22,7 +22,7 @@ tests/                  xUnit (Core i warstwa Windows)
 installer/              Inno Setup
 docs/                   architektura, plan testów
 ```
-Logi: `%LOCALAPPDATA%\Tachyvex\logs`, stan i kopie zapasowe: `%LOCALAPPDATA%\Tachyvex\state.json`.
+Logi: `%LOCALAPPDATA%\Neox\logs`, stan i kopie zapasowe: `%LOCALAPPDATA%\Neox\state.json`.
 
 ## Auto-Tune, zdrowie systemu i Game Boost
 

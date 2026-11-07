@@ -71,7 +71,7 @@ public sealed class ProfileService
         if (_store.State.Settings.CreateRestorePointBeforeProfiles && _engine.IsElevated)
         {
             progress?.Report("Tworzenie punktu przywracania…");
-            var rp = await _restorePoints.CreateAsync("TACHYVEX: " + profile.Name, ct);
+            var rp = await _restorePoints.CreateAsync("NEOX: " + profile.Name, ct);
             lines.Add(rp.Success ? "Punkt przywracania utworzony." : "Punkt przywracania pominięty: " + rp.Message);
         }
 

@@ -24,7 +24,7 @@ public sealed partial class GamingPage : Page
         try
         {
             var picker = new FileSavePicker { SuggestedFileName = string.Concat(p.Name.Where(c => !Path.GetInvalidFileNameChars().Contains(c))) is { Length: > 0 } n ? n : "profil" };
-            picker.FileTypeChoices.Add("Profil TACHYVEX (JSON)", new List<string> { ".json" });
+            picker.FileTypeChoices.Add("Profil NEOX (JSON)", new List<string> { ".json" });
             Init(picker);
             var file = await picker.PickSaveFileAsync();
             if (file is null) return;

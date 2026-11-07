@@ -4,7 +4,7 @@
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Tachyvex.App</RootNamespace>
-    <AssemblyName>Tachyvex</AssemblyName>
+    <AssemblyName>Neox</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
@@ -17,7 +17,7 @@
     <ApplicationIcon>Assets\tachyvex.ico</ApplicationIcon>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Version>2.0.0</Version>
-    <Product>TACHYVEX</Product>
+    <Product>NEOX</Product>
     <Authors>spinprint</Authors>
     <Company>spinprint</Company>
     <Copyright>© spinprint (spinprint.pl)</Copyright>

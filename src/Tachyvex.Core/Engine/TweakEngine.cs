@@ -81,7 +81,7 @@ public sealed class TweakEngine
         {
             var state = _store.State;
             if (state.Snapshots.ContainsKey(id))
-                return TweakResult.Ok("Już zastosowane przez TACHYVEX.");
+                return TweakResult.Ok("Już zastosowane przez NEOX.");
 
             TweakStatus before;
             try { before = await handler.GetStatusAsync(t, ctx, ct).ConfigureAwait(false); }

@@ -15,14 +15,14 @@ public sealed class UpdateService
 {
     public const string Owner = "KarolDuda";
     public const string Repo = "tachyvax-nextgeneration";
-    public const string AssetName = "TACHYVEX_Setup.exe";
+    public const string AssetName = "Neox_Setup.exe";
 
     private static readonly HttpClient Http = CreateClient();
 
     private static HttpClient CreateClient()
     {
         var c = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
-        c.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Tachyvex-Updater", "2"));
+        c.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Neox-Updater", "2"));
         c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         return c;
     }
@@ -76,7 +76,7 @@ public sealed class UpdateService
 
     public async Task<string> DownloadAsync(UpdateInfo info, IProgress<double>? progress = null, CancellationToken ct = default)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"TACHYVEX_Setup_{info.Version}.exe");
+        var path = Path.Combine(Path.GetTempPath(), $"Neox_Setup_{info.Version}.exe");
         using var resp = await Http.GetAsync(info.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         var total = resp.Content.Headers.ContentLength ?? info.Size;

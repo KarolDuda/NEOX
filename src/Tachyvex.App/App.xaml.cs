@@ -54,7 +54,7 @@ public partial class App : Application
 
     private static IServiceProvider BuildServices()
     {
-        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tachyvex", "logs");
+        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Neox", "logs");
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
             .WriteTo.File(Path.Combine(logDir, "tachyvex-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)

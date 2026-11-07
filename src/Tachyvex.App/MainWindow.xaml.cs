@@ -57,7 +57,7 @@ public sealed partial class MainWindow : Window
         {
             store.State.Settings.FirstRunDone = true;
             await store.SaveAsync();
-            var go = await App.Get<DialogService>().ConfirmAsync("Witaj w TACHYVEX",
+            var go = await App.Get<DialogService>().ConfirmAsync("Witaj w NEOX",
                 "Auto-Tune przeskanuje Twój komputer i dobierze bezpieczne optymalizacje. Zobaczysz plan przed startem, a wszystko cofniesz jednym przyciskiem.\n\nChcesz go teraz otworzyć?", "Otwórz Auto-Tune");
             if (go) Navigate("autotune");
         }

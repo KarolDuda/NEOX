@@ -1,4 +1,4 @@
-name: Build TACHYVEX
+name: Build NEOX
 on:
   workflow_dispatch:
   push:
@@ -63,10 +63,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v2.0.${{ github.run_number }}
-          name: TACHYVEX 2.0 (build ${{ github.run_number }})
+          name: NEOX 2.0 (build ${{ github.run_number }})
           files: |
-            **/TACHYVEX_Setup.exe
-          body: Pobierz TACHYVEX_Setup.exe i uruchom. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji, Uruchom mimo to).
+            **/Neox_Setup.exe
+          body: Pobierz Neox_Setup.exe i uruchom. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji, Uruchom mimo to).
 
       - name: Testy (nie blokują instalatora)
         if: always()

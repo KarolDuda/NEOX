@@ -27,7 +27,7 @@ public sealed class JsonStateStore : IStateStore
     }
 
     public static string DefaultPath() => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tachyvex", "state.json");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Neox", "state.json");
 
     public async Task LoadAsync(CancellationToken ct = default)
     {

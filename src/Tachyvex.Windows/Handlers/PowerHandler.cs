@@ -150,7 +150,7 @@ public sealed partial class PowerHandler : ITweakHandler
         var m = GuidRx().Match(dup.Output);
         if (!dup.Success || !m.Success) return null;
         var g = m.Value.ToLowerInvariant();
-        await _run.RunAsync(new[] { "powercfg", "/changename", g, "TACHYVEX Performance", "Plan wydajności utworzony przez TACHYVEX" }, null, ct);
+        await _run.RunAsync(new[] { "powercfg", "/changename", g, "NEOX Performance", "Plan wydajności utworzony przez NEOX" }, null, ct);
         foreach (var (sub, setting, value) in CustomPlanSettings)
             await _run.RunAsync(new[] { "powercfg", "/setacvalueindex", g, sub, setting, value.ToString(CultureInfo.InvariantCulture) }, null, ct);
         return g;

@@ -61,7 +61,7 @@ public sealed class ActionHandler : IActionHandler
         switch (name)
         {
             case "RestorePoint":
-                return (await new RestorePointService(_run).CreateAsync("TACHYVEX", ct)) is { Success: true } ok ? ok.Message
+                return (await new RestorePointService(_run).CreateAsync("NEOX", ct)) is { Success: true } ok ? ok.Message
                     : throw new TweakException("Nie udało się: ochrona systemu może być wyłączona (lub obowiązuje limit 1 punktu na 24 h).");
             case "CleanTemp":
                 return await Task.Run(() => _cleaner.Clean(new[] { "%TEMP%", @"%SystemRoot%\Temp" }, ct), ct);

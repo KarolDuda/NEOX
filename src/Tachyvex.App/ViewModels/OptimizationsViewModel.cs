@@ -70,7 +70,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
 
     public void SetFromStatus(TweakStatus s)
     {
-        // Stan systemu ma pierwszeństwo, ale nie nadpisujemy zmiany, którą TACHYVEX ma w kopii zapasowej, gdy odczyt jest nieznany.
+        // Stan systemu ma pierwszeństwo, ale nie nadpisujemy zmiany, którą NEOX ma w kopii zapasowej, gdy odczyt jest nieznany.
         if (s == TweakStatus.Applied) IsApplied = true;
         else if (s == TweakStatus.NotApplied) IsApplied = _engine.IsApplied(Tweak.Id) && Tweak.Kind == TweakKind.Cmd;
     }

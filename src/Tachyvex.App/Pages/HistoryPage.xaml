@@ -7,7 +7,7 @@
                     <TextBlock Text="Przywracanie" Style="{StaticResource SectionTitleStyle}" />
                     <TextBlock Text="{x:Bind ViewModel.Applied, Mode=OneWay}" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="Cofnij wszystkie zmiany TACHYVEX" Command="{x:Bind ViewModel.RevertAllCommand}" Style="{StaticResource AccentButtonStyleX}" />
+                        <Button Content="Cofnij wszystkie zmiany NEOX" Command="{x:Bind ViewModel.RevertAllCommand}" Style="{StaticResource AccentButtonStyleX}" />
                         <ProgressRing IsActive="{x:Bind ViewModel.Busy, Mode=OneWay}" Width="20" Height="20" />
                     </StackPanel>
                     <TextBlock Text="{x:Bind ViewModel.Message, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />

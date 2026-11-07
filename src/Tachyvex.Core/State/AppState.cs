@@ -51,7 +51,7 @@ public sealed class AppSettings
     public DateTimeOffset? LastAutoTune { get; set; }
 }
 
-/// <summary>Cały trwały stan aplikacji. Zapisywany w %LOCALAPPDATA%\Tachyvex\state.json.</summary>
+/// <summary>Cały trwały stan aplikacji. Zapisywany w %LOCALAPPDATA%\Neox\state.json.</summary>
 public sealed class AppState
 {
     public int SchemaVersion { get; set; } = 1;

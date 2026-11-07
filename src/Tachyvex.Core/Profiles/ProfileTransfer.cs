@@ -39,7 +39,7 @@ public sealed class ProfileTransfer
         JsonNode? root;
         try { root = JsonNode.Parse(json); }
         catch (JsonException) { return new(null, 0, "To nie jest poprawny plik JSON."); }
-        if (root is not JsonObject o || o["format"]?.GetValue<string>() != Format) return new(null, 0, "To nie jest profil TACHYVEX.");
+        if (root is not JsonObject o || o["format"]?.GetValue<string>() != Format) return new(null, 0, "To nie jest profil NEOX.");
         if (o["tweaks"] is not JsonArray arr) return new(null, 0, "Profil nie zawiera listy optymalizacji.");
 
         var name = (o["name"]?.GetValue<string>() ?? "").Trim();

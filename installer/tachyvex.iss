@@ -1,12 +1,12 @@
-#define MyAppName "TACHYVEX"
+#define MyAppName "NEOX"
 #ifndef MyAppVersion
   #define MyAppVersion "2.0.0"
 #endif
-#define MyAppExe "Tachyvex.exe"
+#define MyAppExe "Neox.exe"
 
 [Setup]
 ; Stały AppId: kolejne wersje aktualizują zainstalowaną, zamiast instalować obok.
-AppId={{B3F6C2A1-5D4E-4C7A-9E21-7A1F0C5D8E42}
+AppId={{7C2E9B14-3A58-4F0D-8B6E-1D95A0C4E7F3}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher=spinprint
@@ -14,7 +14,7 @@ AppPublisherURL=https://spinprint.pl
 AppSupportURL=https://spinprint.pl
 AppCopyright=© spinprint (spinprint.pl)
 VersionInfoCompany=spinprint
-VersionInfoProductName=TACHYVEX
+VersionInfoProductName=NEOX
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -23,7 +23,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=output
-OutputBaseFilename=TACHYVEX_Setup
+OutputBaseFilename=Neox_Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

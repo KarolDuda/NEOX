@@ -233,7 +233,7 @@ public sealed class CmdHandler : ITweakHandler
             var isFalse = res.Output.Trim().EndsWith("false", StringComparison.OrdinalIgnoreCase);
             return chk.EqualsFalse == isFalse ? TweakStatus.Applied : TweakStatus.NotApplied;
         }
-        return TweakStatus.Unknown; // brak niezawodnego odczytu: stan = czy zmiana pochodzi z TACHYVEX
+        return TweakStatus.Unknown; // brak niezawodnego odczytu: stan = czy zmiana pochodzi z NEOX
     }
 
     public async Task<JsonNode?> ApplyAsync(TweakDefinition t, TweakContext c, CancellationToken ct)
