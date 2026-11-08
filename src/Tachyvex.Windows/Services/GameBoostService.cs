@@ -23,7 +23,7 @@ public sealed class GameBoostService : IDisposable
     private int _boostedPid;
 
     public event Action<string>? StatusChanged;
-    public string Status { get; private set; } = "Wyłączony";
+    public string Status { get; private set; } = "Off";
     public bool IsRunning => _timer is not null;
 
     public GameBoostService(IStateStore store, IProcessRunner runner, ILogger<GameBoostService> log)
@@ -34,7 +34,7 @@ public sealed class GameBoostService : IDisposable
     public void Start()
     {
         if (_timer is not null) return;
-        SetStatus("Czekam na uruchomienie gry");
+        SetStatus("Waiting for a game to start");
         _timer = new Timer(_ => _ = TickAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(4));
     }
 
@@ -42,7 +42,7 @@ public sealed class GameBoostService : IDisposable
     {
         _timer?.Dispose(); _timer = null;
         await RestoreAsync();
-        SetStatus("Wyłączony");
+        SetStatus("Off");
     }
 
     private IEnumerable<string> WatchedNames()
@@ -72,10 +72,10 @@ public sealed class GameBoostService : IDisposable
             else if (_boostedPid != 0 || _store.State.Settings.GameBoostRestoreScheme is not null)
             {
                 await RestoreAsync();
-                SetStatus("Czekam na uruchomienie gry");
+                SetStatus("Waiting for a game to start");
             }
         }
-        catch (Exception ex) { _log.LogWarning(ex, "Game Boost: błąd cyklu"); }
+        catch (Exception ex) { _log.LogWarning(ex, "Game Boost: cycle error"); }
         finally { Interlocked.Exchange(ref _busy, 0); }
     }
 
@@ -88,12 +88,12 @@ public sealed class GameBoostService : IDisposable
             _store.State.Settings.GameBoostRestoreScheme = active;
             await _store.SaveAsync();
             var r = await _runner.RunAsync(new[] { "powercfg", "/setactive", HighPerformance });
-            if (!r.Success) { _log.LogInformation("Game Boost: plan wysokiej wydajności niedostępny: {M}", r.FirstLine); _store.State.Settings.GameBoostRestoreScheme = null; await _store.SaveAsync(); }
+            if (!r.Success) { _log.LogInformation("Game Boost: high-performance plan unavailable: {M}", r.FirstLine); _store.State.Settings.GameBoostRestoreScheme = null; await _store.SaveAsync(); }
         }
         try { game.PriorityClass = ProcessPriorityClass.High; }
-        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception) { _log.LogInformation("Game Boost: nie można zmienić priorytetu: {M}", ex.Message); }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception) { _log.LogInformation("Game Boost: cannot change priority: {M}", ex.Message); }
         _boostedPid = game.Id;
-        SetStatus($"Aktywny: {game.ProcessName}");
+        SetStatus($"Active: {game.ProcessName}");
     }
 
     /// <summary>Przywraca poprzedni plan zasilania (też po awarii: wartość jest w state.json).</summary>

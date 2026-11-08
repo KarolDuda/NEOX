@@ -37,12 +37,12 @@ public sealed class ProfileService
             .Select(t => t.Id).ToList();
         return new[]
         {
-            new Profile { Id = "builtin.safe", BuiltIn = true, Name = "Bezpieczny start",
-                Description = "Tylko pozycje oznaczone jako zalecane w wydajności, input delay i sieci. Bez usług i zadań.", TweakIds = safe },
+            new Profile { Id = "builtin.safe", BuiltIn = true, Name = "Safe start",
+                Description = "Only items marked as recommended for performance, input delay and network. No services or tasks.", TweakIds = safe },
             new Profile { Id = "builtin.gaming", BuiltIn = true, Name = "Gaming",
-                Description = "Zalecane oraz ostrożne zmiany wydajności, inputu i sieci. Bez usług, eksperymentalnych i wysokiego ryzyka.", TweakIds = gaming },
-            new Profile { Id = "builtin.privacy", BuiltIn = true, Name = "Prywatność",
-                Description = "Zalecane ustawienia prywatności (telemetria, reklamy, sugestie).", TweakIds = privacy },
+                Description = "Recommended and cautious changes for performance, input and network. No services, experimental or high-risk items.", TweakIds = gaming },
+            new Profile { Id = "builtin.privacy", BuiltIn = true, Name = "Privacy",
+                Description = "Recommended privacy settings (telemetry, ads, suggestions).", TweakIds = privacy },
         };
     }
 
@@ -70,16 +70,16 @@ public sealed class ProfileService
 
         if (_store.State.Settings.CreateRestorePointBeforeProfiles && _engine.IsElevated)
         {
-            progress?.Report("Tworzenie punktu przywracania…");
+            progress?.Report("Creating a restore point…");
             var rp = await _restorePoints.CreateAsync("NEOX: " + profile.Name, ct);
-            lines.Add(rp.Success ? "Punkt przywracania utworzony." : "Punkt przywracania pominięty: " + rp.Message);
+            lines.Add(rp.Success ? "Restore point created." : "Restore point skipped: " + rp.Message);
         }
 
         foreach (var id in profile.TweakIds)
         {
             ct.ThrowIfCancellationRequested();
             var t = _catalog.Find(id);
-            if (t is null) { skip++; lines.Add($"• {id}: brak w katalogu"); continue; }
+            if (t is null) { skip++; lines.Add($"• {id}: not in the catalog"); continue; }
             if (t.RequiresAdmin && !_engine.IsElevated) { skip++; lines.Add($"• {t.Title}: wymaga administratora"); continue; }
             progress?.Report(t.Title);
             var r = await _engine.ApplyAsync(id, ctx, ct);
@@ -88,8 +88,8 @@ public sealed class ProfileService
         }
         _store.State.History.Add(new HistoryEntry
         {
-            Time = _clock.Now, TweakId = "profile:" + profile.Id, Title = "Profil: " + profile.Name,
-            Action = HistoryAction.ProfileApply, Success = fail == 0, Message = $"{ok} zastosowano, {skip} pominięto, {fail} błędów"
+            Time = _clock.Now, TweakId = "profile:" + profile.Id, Title = "Profile: " + profile.Name,
+            Action = HistoryAction.ProfileApply, Success = fail == 0, Message = $"{ok} applied, {skip} skipped, {fail} errors"
         });
         await _store.SaveAsync(ct);
         return new ProfileApplyReport(ok, skip, fail, restart, lines);

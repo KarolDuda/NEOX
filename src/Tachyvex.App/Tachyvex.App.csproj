@@ -36,4 +36,7 @@
     <ProjectReference Include="..\Tachyvex.Core\Tachyvex.Core.csproj" />
     <ProjectReference Include="..\Tachyvex.Windows\Tachyvex.Windows.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

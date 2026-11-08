@@ -109,7 +109,7 @@ public sealed class WindowsLayerTests : IDisposable
         var msg = new FileCleaner().Clean(new[] { root, @"C:\", @"C:\Windows" }, default);
         Assert.True(Directory.Exists(root));
         Assert.Empty(Directory.GetFileSystemEntries(root));
-        Assert.Contains("2 plików", msg);
+        Assert.Contains("2 files", msg);
         Assert.True(Directory.Exists(@"C:\Windows")); // zbyt płytka ścieżka: nietknięta
         Directory.Delete(root);
     }

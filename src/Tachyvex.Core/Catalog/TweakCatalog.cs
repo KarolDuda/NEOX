@@ -30,7 +30,7 @@ public sealed class TweakCatalog
     public static TweakCatalog LoadEmbedded()
     {
         using var s = typeof(TweakCatalog).Assembly.GetManifestResourceStream(ResourceName)
-            ?? throw new InvalidOperationException("Brak zasobu katalogu: " + ResourceName);
+            ?? throw new InvalidOperationException("Catalog resource missing: " + ResourceName);
         return Load(s);
     }
 
@@ -38,7 +38,7 @@ public sealed class TweakCatalog
     {
         var file = JsonSerializer.Deserialize<CatalogFile>(stream, JsonOptions)
             ?? throw new InvalidDataException("Pusty katalog.");
-        if (file.SchemaVersion != 1) throw new InvalidDataException($"Nieobsługiwana wersja katalogu: {file.SchemaVersion}");
+        if (file.SchemaVersion != 1) throw new InvalidDataException($"Unsupported catalog version: {file.SchemaVersion}");
         return new TweakCatalog(file.Tweaks);
     }
 

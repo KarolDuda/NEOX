@@ -42,9 +42,9 @@ public sealed class UpdateService
         {
             using var resp = await Http.GetAsync($"https://api.github.com/repos/{Owner}/{Repo}/releases/latest", ct).ConfigureAwait(false);
             if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
-                return (null, "Nie można sprawdzić aktualizacji: repozytorium jest prywatne lub nie ma jeszcze wydania.");
+                return (null, "Cannot check for updates: the repository is private or has no release yet.");
             if (!resp.IsSuccessStatusCode)
-                return (null, $"Serwer aktualizacji odpowiedział błędem {(int)resp.StatusCode}.");
+                return (null, $"The update server returned error {(int)resp.StatusCode}.");
 
             using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
             var root = doc.RootElement;
@@ -56,17 +56,17 @@ public sealed class UpdateService
             foreach (var a in root.GetProperty("assets").EnumerateArray())
                 if (string.Equals(a.GetProperty("name").GetString(), AssetName, StringComparison.OrdinalIgnoreCase))
                 { url = a.GetProperty("browser_download_url").GetString(); size = a.GetProperty("size").GetInt64(); }
-            if (url is null) return (null, "Wydanie nie zawiera pliku instalatora.");
-            if (!IsTrustedUrl(url)) return (null, "Adres pobierania nie pochodzi z github.com: pominięto.");
+            if (url is null) return (null, "The release does not contain an installer file.");
+            if (!IsTrustedUrl(url)) return (null, "The download URL is not from github.com: skipped.");
 
             var notes = root.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
             return latest > Current
-                ? (new UpdateInfo(latest, tag, url, size, notes), $"Dostępna wersja {latest} (masz {Current}).")
-                : (null, $"Masz najnowszą wersję ({Current}).");
+                ? (new UpdateInfo(latest, tag, url, size, notes), $"Version {latest} is available (you have {Current}).")
+                : (null, $"You have the latest version ({Current}).");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException)
         {
-            return (null, "Brak połączenia z serwerem aktualizacji.");
+            return (null, "Cannot reach the update server.");
         }
     }
 
@@ -94,7 +94,7 @@ public sealed class UpdateService
         if (info.Size > 0 && new FileInfo(path).Length != info.Size)
         {
             File.Delete(path);
-            throw new IOException("Pobrany plik ma inny rozmiar niż w wydaniu; pobieranie przerwano.");
+            throw new IOException("The downloaded file size differs from the release; download aborted.");
         }
         return path;
     }

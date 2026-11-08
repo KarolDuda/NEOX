@@ -43,7 +43,7 @@ public sealed class JsonStateStore : IStateStore
             catch (JsonException ex)
             {
                 // Uszkodzony plik: zachowaj go do analizy i nie gub kopii poprzedniej.
-                _log.LogError(ex, "Uszkodzony plik stanu {Path}", _path);
+                _log.LogError(ex, "Corrupted state file {Path}", _path);
                 var broken = _path + ".broken-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                 File.Move(_path, broken, overwrite: true);
                 var bak = _path + ".bak";

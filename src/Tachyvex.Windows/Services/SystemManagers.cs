@@ -15,8 +15,8 @@ public sealed class StartupManager
 {
     private static readonly (string Hive, string Run, string Approved, string Label)[] Sources =
     {
-        ("HKCU", @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run", "Użytkownik"),
-        ("HKLM", @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run", "Wszyscy użytkownicy"),
+        ("HKCU", @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run", "Current user"),
+        ("HKLM", @"Software\Microsoft\Windows\CurrentVersion\Run", @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run", "All users"),
     };
 
     private readonly RegistryService _reg = new();

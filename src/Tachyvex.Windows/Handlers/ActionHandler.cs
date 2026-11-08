@@ -29,8 +29,8 @@ public sealed class ActionHandler : IActionHandler
             {
                 var r = await _run.RunAsync(ProcessRunner.PowerShell(t.Target!), TimeSpan.FromSeconds(60), ct);
                 var text = r.Output.Trim();
-                if (!r.Success && text.Length == 0) throw new TweakException("Polecenie nie powiodło się.");
-                return text.Length == 0 ? "Brak danych." : text[..Math.Min(text.Length, 4000)];
+                if (!r.Success && text.Length == 0) throw new TweakException("The command failed.");
+                return text.Length == 0 ? "No data." : text[..Math.Min(text.Length, 4000)];
             }
             case ActionKind.Command:
             {
@@ -38,7 +38,7 @@ public sealed class ActionHandler : IActionHandler
                 foreach (var argv in t.Commands!)
                 {
                     var r = await _run.RunAsync(argv, timeout, ct);
-                    if (!r.Success) throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "Polecenie zakończyło się błędem." : r.FirstLine);
+                    if (!r.Success) throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "The command finished with an error." : r.FirstLine);
                 }
                 return t.SuccessMessage ?? "Wykonano.";
             }
@@ -53,7 +53,7 @@ public sealed class ActionHandler : IActionHandler
     {
         try { Process.Start(new ProcessStartInfo(target) { UseShellExecute = true }); }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-        { throw new TweakException("Nie udało się otworzyć: " + ex.Message, ex); }
+        { throw new TweakException("Could not open: " + ex.Message, ex); }
     }
 
     private async Task<string> RunNativeAsync(string name, CancellationToken ct)
@@ -62,17 +62,17 @@ public sealed class ActionHandler : IActionHandler
         {
             case "RestorePoint":
                 return (await new RestorePointService(_run).CreateAsync("NEOX", ct)) is { Success: true } ok ? ok.Message
-                    : throw new TweakException("Nie udało się: ochrona systemu może być wyłączona (lub obowiązuje limit 1 punktu na 24 h).");
+                    : throw new TweakException("Failed: System Protection may be off (or the limit of 1 restore point per 24 h applies).");
             case "CleanTemp":
                 return await Task.Run(() => _cleaner.Clean(new[] { "%TEMP%", @"%SystemRoot%\Temp" }, ct), ct);
             case "EmptyRecycleBin":
                 SHEmptyRecycleBin(IntPtr.Zero, null, 0x7); // bez pytań, dźwięku i paska postępu
-                return "Kosz opróżniony (lub był pusty).";
+                return "Recycle Bin emptied (or it was already empty).";
             case "EnergyReport":
             {
                 var path = Path.Combine(Path.GetTempPath(), "tachyvex_energy.html");
                 await _run.RunAsync(new[] { "powercfg", "/energy", "/output", path, "/duration", "10" }, TimeSpan.FromSeconds(120), ct);
-                if (!File.Exists(path)) throw new TweakException("Nie udało się wygenerować raportu.");
+                if (!File.Exists(path)) throw new TweakException("Could not generate the report.");
                 Open(path);
                 return "Raport zapisano: " + path;
             }
@@ -82,7 +82,7 @@ public sealed class ActionHandler : IActionHandler
                 return "Eksplorator zrestartowany.";
             case "StoreReset":
                 Process.Start(new ProcessStartInfo("wsreset.exe") { UseShellExecute = false, CreateNoWindow = true });
-                return "Uruchomiono reset pamięci podręcznej Sklepu (otworzy się okno Sklepu).";
+                return "Microsoft Store cache reset started (the Store window will open).";
             case "RenewIp":
             {
                 var rel = await _run.RunAsync(new[] { "ipconfig", "/release" }, TimeSpan.FromSeconds(60), ct);

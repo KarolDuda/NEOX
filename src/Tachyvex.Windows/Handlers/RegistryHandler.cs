@@ -22,7 +22,7 @@ public sealed class RegistryHandler : ITweakHandler
                 return t.Values!;
             case TweakKind.RegPerAdapter:
                 var adapters = NetworkAdapters.GetActive();
-                if (adapters.Count == 0) throw new TweakException("Nie znaleziono aktywnej karty sieciowej.");
+                if (adapters.Count == 0) throw new TweakException("No active network adapter found.");
                 return adapters.SelectMany(a => t.PerAdapter!.Values.Select(v => new RegValueSpec
                 {
                     Hive = v.Hive, Path = t.PerAdapter.PathTemplate.Replace("{guid}", "{" + a.Guid + "}"),
@@ -31,7 +31,7 @@ public sealed class RegistryHandler : ITweakHandler
             case TweakKind.RegPerGame:
                 var exe = c.GameExePath?.Trim().Trim('"');
                 if (string.IsNullOrEmpty(exe) || !File.Exists(exe))
-                    throw new TweakException("Wskaż poprawną ścieżkę do pliku .exe gry.");
+                    throw new TweakException("Choose a valid path to the game's .exe file.");
                 return t.PerGame!.Select(v => new RegValueSpec { Hive = v.Hive, Path = v.Path, Name = exe, Type = v.Type, Value = v.Value }).ToList();
             default:
                 throw new NotSupportedException();
@@ -73,7 +73,7 @@ public sealed class RegistryHandler : ITweakHandler
         {
             // Wycofaj to, co już zapisano, żeby nie zostawić zmiany połowicznej.
             for (var i = 0; i < written; i++) _reg.Restore((JsonObject)snapshots[i]!);
-            throw new TweakException("Odmowa dostępu do rejestru (polityka lub brak uprawnień): " + ex.Message, ex);
+            throw new TweakException("Registry access denied (policy or missing permissions): " + ex.Message, ex);
         }
 
         if (t.Post == "refreshMouse") MouseRefresh.Apply();

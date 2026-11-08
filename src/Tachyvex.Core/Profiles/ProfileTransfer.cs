@@ -34,16 +34,16 @@ public sealed class ProfileTransfer
 
     public ImportResult Import(string json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return new(null, 0, "Plik jest pusty.");
-        if (json.Length > MaxBytes) return new(null, 0, "Plik jest zbyt duży na profil.");
+        if (string.IsNullOrWhiteSpace(json)) return new(null, 0, "The file is empty.");
+        if (json.Length > MaxBytes) return new(null, 0, "The file is too large to be a profile.");
         JsonNode? root;
         try { root = JsonNode.Parse(json); }
-        catch (JsonException) { return new(null, 0, "To nie jest poprawny plik JSON."); }
-        if (root is not JsonObject o || o["format"]?.GetValue<string>() != Format) return new(null, 0, "To nie jest profil NEOX.");
-        if (o["tweaks"] is not JsonArray arr) return new(null, 0, "Profil nie zawiera listy optymalizacji.");
+        catch (JsonException) { return new(null, 0, "This is not a valid JSON file."); }
+        if (root is not JsonObject o || o["format"]?.GetValue<string>() != Format) return new(null, 0, "This is not a NEOX profile.");
+        if (o["tweaks"] is not JsonArray arr) return new(null, 0, "The profile has no optimization list.");
 
         var name = (o["name"]?.GetValue<string>() ?? "").Trim();
-        if (name.Length == 0) name = "Zaimportowany profil";
+        if (name.Length == 0) name = "Imported profile";
         if (name.Length > 60) name = name[..60];
         var desc = (o["description"]?.GetValue<string>() ?? "").Trim();
         if (desc.Length > 300) desc = desc[..300];
@@ -60,7 +60,7 @@ public sealed class ProfileTransfer
                 && t.Risk is RiskLevel.Recommended or RiskLevel.Caution;
             if (allowed && !ids.Contains(id!)) ids.Add(id!); else dropped++;
         }
-        if (ids.Count == 0) return new(null, dropped, "Profil nie zawiera żadnych dozwolonych optymalizacji.");
-        return new(new Profile { Name = name, Description = desc.Length == 0 ? "Zaimportowany profil." : desc, TweakIds = ids }, dropped, null);
+        if (ids.Count == 0) return new(null, dropped, "The profile contains no allowed optimizations.");
+        return new(new Profile { Name = name, Description = desc.Length == 0 ? "Imported profile." : desc, TweakIds = ids }, dropped, null);
     }
 }

@@ -36,7 +36,7 @@ public static class SystemInfo
     {
         var sb = new StringBuilder();
         var cpu = Cpu();
-        if (cpu is not null) sb.AppendLine($"CPU: {cpu.Name} ({cpu.Cores} rdzeni / {cpu.Threads} wątków)");
+        if (cpu is not null) sb.AppendLine($"CPU: {cpu.Name} ({cpu.Cores} cores / {cpu.Threads} threads)");
         foreach (var g in Gpus()) sb.AppendLine($"GPU: {g.Name} | sterownik {g.DriverVersion} | {g.RefreshHz} Hz");
         sb.AppendLine($"RAM: {TotalRamBytes() / 1073741824.0:F0} GB");
         var os = Os();

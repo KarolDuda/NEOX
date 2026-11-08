@@ -13,7 +13,7 @@ public sealed class RegistryService
     {
         "HKCU" => RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry64),
         "HKLM" => RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64),
-        _ => throw new ArgumentException("Nieobsługiwany hive: " + hive)
+        _ => throw new ArgumentException("Unsupported hive: " + hive)
     };
 
     public (object? Value, RegistryValueKind Kind)? Read(string hive, string path, string? name)
@@ -29,7 +29,7 @@ public sealed class RegistryService
     {
         using var root = Root(hive);
         using var key = root.CreateSubKey(path, writable: true)
-            ?? throw new InvalidOperationException($"Nie można otworzyć klucza {hive}\\{path}");
+            ?? throw new InvalidOperationException($"Cannot open key {hive}\\{path}");
         key.SetValue(name ?? "", value, kind);
     }
 

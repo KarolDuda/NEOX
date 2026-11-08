@@ -36,9 +36,9 @@ public sealed class ServiceHandler : ITweakHandler
     public async Task<JsonNode?> ApplyAsync(TweakDefinition t, TweakContext c, CancellationToken ct)
     {
         var name = t.Service!;
-        var cur = Read(name) ?? throw new TweakException($"Usługa {name} nie istnieje na tym komputerze.");
+        var cur = Read(name) ?? throw new TweakException($"Service {name} does not exist on this computer.");
         var r = await _run.RunAsync(new[] { "sc", "config", name, "start=", "disabled" }, null, ct);
-        if (!r.Success) throw new TweakException($"Nie udało się wyłączyć usługi {name}: {r.FirstLine}");
+        if (!r.Success) throw new TweakException($"Could not disable service {name}: {r.FirstLine}");
         return new JsonObject { ["service"] = name, ["start"] = cur.Start, ["delayed"] = cur.Delayed };
     }
 
@@ -50,7 +50,7 @@ public sealed class ServiceHandler : ITweakHandler
         var delayed = s["delayed"]!.GetValue<int>() == 1;
         var mode = start switch { Auto => delayed ? "delayed-auto" : "auto", Demand => "demand", Disabled => "disabled", _ => "demand" };
         var r = await _run.RunAsync(new[] { "sc", "config", name, "start=", mode }, null, ct);
-        if (!r.Success) throw new TweakException($"Nie udało się przywrócić usługi {name}: {r.FirstLine}");
+        if (!r.Success) throw new TweakException($"Could not restore service {name}: {r.FirstLine}");
     }
 }
 
@@ -84,10 +84,10 @@ public sealed class TaskHandler : ITweakHandler
             var was = await EnabledAsync(task, ct);
             if (was is null) continue; // zadanie nie istnieje w tej wersji Windows
             var r = await _run.RunAsync(new[] { "schtasks", "/change", "/tn", task, "/disable" }, null, ct);
-            if (!r.Success) throw new TweakException($"Nie udało się wyłączyć zadania {task}: {r.FirstLine}");
+            if (!r.Success) throw new TweakException($"Could not disable task {task}: {r.FirstLine}");
             changed.Add(new JsonObject { ["task"] = task, ["wasEnabled"] = was.Value });
         }
-        if (changed.Count == 0) throw new TweakException("Żadne z tych zadań nie istnieje w tej wersji Windows.");
+        if (changed.Count == 0) throw new TweakException("None of these tasks exist in this version of Windows.");
         return changed;
     }
 
@@ -97,7 +97,7 @@ public sealed class TaskHandler : ITweakHandler
         {
             if (!n!["wasEnabled"]!.GetValue<bool>()) continue;
             var r = await _run.RunAsync(new[] { "schtasks", "/change", "/tn", n["task"]!.GetValue<string>(), "/enable" }, null, ct);
-            if (!r.Success) throw new TweakException("Nie udało się włączyć zadania: " + r.FirstLine);
+            if (!r.Success) throw new TweakException("Could not enable the task: " + r.FirstLine);
         }
     }
 }
@@ -111,7 +111,7 @@ public sealed partial class BcdHandler : ITweakHandler
     private async Task<string?> GetAsync(string key, CancellationToken ct)
     {
         var r = await _run.RunAsync(new[] { "bcdedit", "/enum", "{current}" }, null, ct);
-        if (!r.Success) throw new TweakException("bcdedit nie jest dostępny (wymaga administratora): " + r.FirstLine);
+        if (!r.Success) throw new TweakException("bcdedit is unavailable (requires administrator): " + r.FirstLine);
         var m = Regex.Match(r.Output, @"^\s*" + Regex.Escape(key) + @"\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.Multiline);
         return m.Success ? m.Groups[1].Value : null;
     }
@@ -126,7 +126,7 @@ public sealed partial class BcdHandler : ITweakHandler
     {
         var old = await GetAsync(t.Bcd!.Key, ct);
         var r = await _run.RunAsync(new[] { "bcdedit", "/set", t.Bcd.Key, t.Bcd.Value }, null, ct);
-        if (!r.Success) throw new TweakException("bcdedit nie zaakceptował zmiany: " + r.FirstLine);
+        if (!r.Success) throw new TweakException("bcdedit rejected the change: " + r.FirstLine);
         return new JsonObject { ["key"] = t.Bcd.Key, ["old"] = old };
     }
 
@@ -137,7 +137,7 @@ public sealed partial class BcdHandler : ITweakHandler
         var r = old is null
             ? await _run.RunAsync(new[] { "bcdedit", "/deletevalue", key }, null, ct)
             : await _run.RunAsync(new[] { "bcdedit", "/set", key, old }, null, ct);
-        if (!r.Success) throw new TweakException("bcdedit nie zaakceptował cofnięcia: " + r.FirstLine);
+        if (!r.Success) throw new TweakException("bcdedit rejected the revert: " + r.FirstLine);
     }
 }
 
@@ -168,7 +168,7 @@ public sealed class NicHandler : ITweakHandler
         var r = await _run.RunAsync(ProcessRunner.PowerShell(
             $"Set-NetAdapterAdvancedProperty -Name '{Q(adapter)}' -RegistryKeyword '{Q(keyword)}' -RegistryValue '{Q(value)}' -ErrorAction Stop"),
             TimeSpan.FromSeconds(60), ct);
-        if (!r.Success) throw new TweakException($"Karta {adapter}: {r.FirstLine}");
+        if (!r.Success) throw new TweakException($"Adapter {adapter}: {r.FirstLine}");
     }
 
     public async Task<TweakStatus> GetStatusAsync(TweakDefinition t, TweakContext c, CancellationToken ct)
@@ -187,7 +187,7 @@ public sealed class NicHandler : ITweakHandler
         foreach (var kw in t.Nic!.Keywords)
             foreach (var (adapter, value) in await ReadAsync(kw, ct))
                 snap.Add(new JsonObject { ["adapter"] = adapter, ["keyword"] = kw, ["old"] = value });
-        if (snap.Count == 0) throw new TweakException("Żadna aktywna karta sieciowa nie obsługuje tego ustawienia.");
+        if (snap.Count == 0) throw new TweakException("No active network adapter supports this setting.");
 
         var done = 0;
         try
@@ -245,7 +245,7 @@ public sealed class CmdHandler : ITweakHandler
             if (!r.Success)
             {
                 for (var i = 0; i < ran; i++) await _run.RunAsync(t.Cmd.Off[Math.Min(i, t.Cmd.Off.Count - 1)], TimeSpan.FromSeconds(120), CancellationToken.None);
-                throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "Polecenie nie powiodło się." : r.FirstLine);
+                throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "The command failed." : r.FirstLine);
             }
             ran++;
         }
@@ -257,7 +257,7 @@ public sealed class CmdHandler : ITweakHandler
         foreach (var argv in t.Cmd!.Off)
         {
             var r = await _run.RunAsync(argv, TimeSpan.FromSeconds(120), ct);
-            if (!r.Success) throw new TweakException("Cofnięcie nie powiodło się: " + r.FirstLine);
+            if (!r.Success) throw new TweakException("Revert failed: " + r.FirstLine);
         }
     }
 }

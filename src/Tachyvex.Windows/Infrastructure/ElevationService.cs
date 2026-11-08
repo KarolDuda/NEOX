@@ -19,7 +19,7 @@ public sealed class ElevationService : IElevationService
     {
         try
         {
-            var exe = Environment.ProcessPath ?? throw new InvalidOperationException("Brak ścieżki procesu.");
+            var exe = Environment.ProcessPath ?? throw new InvalidOperationException("Process path not available.");
             Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, Verb = "runas" });
             return true;
         }

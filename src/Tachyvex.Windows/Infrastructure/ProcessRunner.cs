@@ -34,7 +34,7 @@ public sealed class ProcessRunner : IProcessRunner
 
         using var p = new Process { StartInfo = psi };
         try { p.Start(); }
-        catch (Win32Exception ex) { return new ProcessResult(-1, $"Nie można uruchomić {argv[0]}: {ex.Message}"); }
+        catch (Win32Exception ex) { return new ProcessResult(-1, $"Cannot start {argv[0]}: {ex.Message}"); }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeout ?? TimeSpan.FromSeconds(60));

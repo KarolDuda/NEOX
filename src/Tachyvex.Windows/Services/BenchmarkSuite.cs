@@ -13,11 +13,11 @@ public sealed class BenchmarkSuite : IBenchmarkSuite
 
     public Task<BenchmarkResult> RunAsync(IProgress<string>? progress, CancellationToken ct = default) => Task.Run(() =>
     {
-        progress?.Report("Pomiar: procesor…");
+        progress?.Report("Measuring: processor…");
         var cpu = Median(5, () => CpuOnce(), ct);
-        progress?.Report("Pomiar: pamięć…");
+        progress?.Report("Measuring: memory…");
         var mem = Median(5, () => MemOnce(), ct);
-        progress?.Report("Pomiar: timer…");
+        progress?.Report("Measuring: timer…");
         var (avg, p99) = TimerOnce(ct);
         return new BenchmarkResult(cpu, mem, avg, p99);
     }, ct);

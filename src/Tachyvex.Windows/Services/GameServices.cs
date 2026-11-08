@@ -66,9 +66,9 @@ public sealed class FortniteConfigService
 
     public string Apply()
     {
-        if (!Exists) throw new InvalidOperationException("Nie znaleziono pliku ustawień Fortnite.");
+        if (!Exists) throw new InvalidOperationException("Fortnite settings file not found.");
         if (GameDiscovery.IsRunning("FortniteClient-Win64-Shipping"))
-            throw new InvalidOperationException("Zamknij Fortnite przed zmianą ustawień (gra nadpisuje plik przy wyjściu).");
+            throw new InvalidOperationException("Close Fortnite before changing settings (the game overwrites the file on exit).");
         var txt = File.ReadAllText(IniPath);
         var changed = 0;
         foreach (var (key, bad, good) in Rules)
@@ -76,19 +76,19 @@ public sealed class FortniteConfigService
             var next = Regex.Replace(txt, $@"^({key})={bad}\s*$", $"$1={good}", RegexOptions.Multiline);
             if (next != txt) { changed++; txt = next; }
         }
-        if (changed == 0) return "Nic do zmiany: V-Sync i HDR są już wyłączone.";
+        if (changed == 0) return "Nothing to change: V-Sync and HDR are already off.";
         File.Copy(IniPath, BackupPath, overwrite: true);
         File.WriteAllText(IniPath, txt);
-        return $"Zmieniono {changed} ustawień. Kopia zapasowa: {BackupPath}";
+        return $"Changed {changed} settings. Backup: {BackupPath}";
     }
 
     public string Restore()
     {
-        if (!HasBackup) throw new InvalidOperationException("Brak kopii zapasowej.");
+        if (!HasBackup) throw new InvalidOperationException("No backup available.");
         if (GameDiscovery.IsRunning("FortniteClient-Win64-Shipping"))
-            throw new InvalidOperationException("Zamknij Fortnite przed przywróceniem ustawień.");
+            throw new InvalidOperationException("Close Fortnite before restoring settings.");
         File.Copy(BackupPath, IniPath, overwrite: true);
         File.Delete(BackupPath);
-        return "Przywrócono ustawienia sprzed zmiany.";
+        return "Settings restored to their state before the change.";
     }
 }

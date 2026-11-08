@@ -51,7 +51,7 @@ public sealed class TweakEngine
         try { return await h.GetStatusAsync(t, ctx, ct).ConfigureAwait(false); }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _log.LogWarning(ex, "Nie udało się odczytać stanu {Id}", id);
+            _log.LogWarning(ex, "Could not read state of {Id}", id);
             return TweakStatus.Unknown;
         }
     }
@@ -70,18 +70,18 @@ public sealed class TweakEngine
     public async Task<TweakResult> ApplyAsync(string id, TweakContext ctx, CancellationToken ct = default)
     {
         var t = _catalog.Get(id);
-        if (t.IsAction) return TweakResult.Fail("To jest akcja jednorazowa, nie ustawienie.");
+        if (t.IsAction) return TweakResult.Fail("This is a one-time action, not a setting.");
         if (t.RequiresAdmin && !_elevation.IsElevated)
-            return TweakResult.Fail("Ta zmiana wymaga uruchomienia programu jako administrator.");
+            return TweakResult.Fail("This change requires running the app as administrator.");
         if (!_handlers.TryGetValue(t.Kind, out var handler))
-            return TweakResult.Fail("Brak obsługi dla rodzaju " + t.Kind);
+            return TweakResult.Fail("No handler for kind " + t.Kind);
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             var state = _store.State;
             if (state.Snapshots.ContainsKey(id))
-                return TweakResult.Ok("Już zastosowane przez NEOX.");
+                return TweakResult.Ok("Already applied by NEOX.");
 
             TweakStatus before;
             try { before = await handler.GetStatusAsync(t, ctx, ct).ConfigureAwait(false); }
@@ -94,7 +94,7 @@ public sealed class TweakEngine
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _log.LogError(ex, "Zastosowanie {Id} nie powiodło się", id);
+                _log.LogError(ex, "Applying {Id} failed", id);
                 await RecordAsync(t, HistoryAction.Apply, false, ex.Message, ct).ConfigureAwait(false);
                 return TweakResult.Fail(ex.Message);
             }
@@ -111,18 +111,18 @@ public sealed class TweakEngine
             {
                 // Weryfikacja nie potwierdziła zmiany: cofamy, zamiast zostawiać stan nieznany.
                 _log.LogWarning("Weryfikacja {Id} nieudana, cofam", id);
-                try { await handler.RevertAsync(t, snapshot, ctx, ct).ConfigureAwait(false); } catch (Exception ex) { _log.LogError(ex, "Cofnięcie po nieudanej weryfikacji {Id}", id); }
+                try { await handler.RevertAsync(t, snapshot, ctx, ct).ConfigureAwait(false); } catch (Exception ex) { _log.LogError(ex, "Rollback after failed verification of {Id}", id); }
                 state.Snapshots.Remove(id);
                 await _store.SaveAsync(ct).ConfigureAwait(false);
-                const string msg = "Zmiana nie została potwierdzona odczytem (system lub polityka mogły ją odrzucić). Przywrócono poprzedni stan.";
+                const string msg = "The change was not confirmed by read-back (Windows or a policy may have rejected it). The previous state was restored.";
                 await RecordAsync(t, HistoryAction.Apply, false, msg, ct).ConfigureAwait(false);
                 return TweakResult.Fail(msg);
             }
 
             if (t.Restart != RestartRequirement.None && !state.PendingRestart.Contains(id))
                 state.PendingRestart.Add(id);
-            await RecordAsync(t, HistoryAction.Apply, true, "Zastosowano", ct).ConfigureAwait(false);
-            return TweakResult.Ok("Zastosowano.", t.Restart);
+            await RecordAsync(t, HistoryAction.Apply, true, "Applied", ct).ConfigureAwait(false);
+            return TweakResult.Ok("Applied.", t.Restart);
         }
         finally { _gate.Release(); }
     }
@@ -131,30 +131,30 @@ public sealed class TweakEngine
     {
         var t = _catalog.Get(id);
         if (!_handlers.TryGetValue(t.Kind, out var handler))
-            return TweakResult.Fail("Brak obsługi dla rodzaju " + t.Kind);
+            return TweakResult.Fail("No handler for kind " + t.Kind);
         if (t.RequiresAdmin && !_elevation.IsElevated)
-            return TweakResult.Fail("Cofnięcie wymaga uruchomienia programu jako administrator.");
+            return TweakResult.Fail("Reverting requires running the app as administrator.");
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             var state = _store.State;
             if (!state.Snapshots.TryGetValue(id, out var snapshot))
-                return TweakResult.Fail("Brak zapisanej kopii zapasowej tej zmiany, więc nie można jej bezpiecznie cofnąć.");
+                return TweakResult.Fail("No backup of this change was saved, so it cannot be reverted safely.");
             try
             {
                 await handler.RevertAsync(t, snapshot, ctx, ct).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _log.LogError(ex, "Cofnięcie {Id} nie powiodło się", id);
+                _log.LogError(ex, "Reverting {Id} failed", id);
                 await RecordAsync(t, HistoryAction.Revert, false, ex.Message, ct).ConfigureAwait(false);
-                return TweakResult.Fail(ex.Message); // migawka zostaje, można spróbować ponownie
+                return TweakResult.Fail(ex.Message); // the snapshot stays, so you can retry
             }
             state.Snapshots.Remove(id);
             state.PendingRestart.Remove(id);
-            await RecordAsync(t, HistoryAction.Revert, true, "Cofnięto", ct).ConfigureAwait(false);
-            return TweakResult.Ok("Cofnięto.", t.Restart);
+            await RecordAsync(t, HistoryAction.Revert, true, "Reverted", ct).ConfigureAwait(false);
+            return TweakResult.Ok("Reverted.", t.Restart);
         }
         finally { _gate.Release(); }
     }
@@ -162,11 +162,11 @@ public sealed class TweakEngine
     public async Task<TweakResult> RunActionAsync(string id, TweakContext ctx, CancellationToken ct = default)
     {
         var t = _catalog.Get(id);
-        if (!t.IsAction) return TweakResult.Fail("To nie jest akcja.");
+        if (!t.IsAction) return TweakResult.Fail("This is not an action.");
         if (t.RequiresAdmin && !_elevation.IsElevated)
-            return TweakResult.Fail("Ta akcja wymaga uruchomienia programu jako administrator.");
+            return TweakResult.Fail("This action requires running the app as administrator.");
         var handler = _actions.FirstOrDefault(a => a.CanHandle(t));
-        if (handler is null) return TweakResult.Fail("Brak obsługi tej akcji.");
+        if (handler is null) return TweakResult.Fail("No handler for this action.");
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
@@ -179,7 +179,7 @@ public sealed class TweakEngine
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _log.LogError(ex, "Akcja {Id} nie powiodła się", id);
+                _log.LogError(ex, "Action {Id} failed", id);
                 await RecordAsync(t, HistoryAction.Run, false, ex.Message, ct).ConfigureAwait(false);
                 return TweakResult.Fail(ex.Message);
             }

@@ -23,7 +23,7 @@ public sealed class NetworkDiagnostics
     {
         ("Cloudflare", "1.1.1.1"), ("Google", "8.8.8.8"),
         ("AWS Frankfurt (EU)", "ec2.eu-central-1.amazonaws.com"), ("AWS Irlandia (EU)", "ec2.eu-west-1.amazonaws.com"),
-        ("AWS Londyn (EU)", "ec2.eu-west-2.amazonaws.com"), ("AWS Paryż (EU)", "ec2.eu-west-3.amazonaws.com"),
+        ("AWS London (EU)", "ec2.eu-west-2.amazonaws.com"), ("AWS Paris (EU)", "ec2.eu-west-3.amazonaws.com"),
         ("AWS Sztokholm (EU)", "ec2.eu-north-1.amazonaws.com"), ("AWS Wirginia (NA-East)", "ec2.us-east-1.amazonaws.com"),
     };
 
@@ -132,7 +132,7 @@ public sealed class NetworkDiagnostics
     public async Task<TweakResult> SetDnsAsync(IReadOnlyList<string> servers, CancellationToken ct = default)
     {
         if (!servers.All(s => IPAddress.TryParse(s, out var ip) && ip.AddressFamily == AddressFamily.InterNetwork))
-            return TweakResult.Fail("Nieprawidłowy adres DNS.");
+            return TweakResult.Fail("Invalid DNS address.");
         var done = 0;
         foreach (var a in NetworkAdapters.GetActive())
         {
@@ -146,12 +146,12 @@ public sealed class NetworkDiagnostics
         }
         await _run.RunAsync(new[] { "ipconfig", "/flushdns" }, null, ct).ConfigureAwait(false);
         return done > 0 ? TweakResult.Ok($"DNS ustawiony na {string.Join(" / ", servers)} ({done} kart).")
-                        : TweakResult.Fail("Nie udało się ustawić DNS (wymagane uprawnienia administratora).");
+                        : TweakResult.Fail("Could not set DNS (administrator rights required).");
     }
 
     public async Task<TweakResult> RestoreDnsAsync(CancellationToken ct = default)
     {
-        if (_store.State.DnsBackups.Count == 0) return TweakResult.Fail("Brak zapisanej kopii DNS.");
+        if (_store.State.DnsBackups.Count == 0) return TweakResult.Fail("No saved DNS backup.");
         var done = 0;
         foreach (var a in NetworkAdapters.GetActive())
         {
@@ -164,6 +164,6 @@ public sealed class NetworkDiagnostics
             if (r.Success) { _store.State.DnsBackups.Remove(a.Guid); done++; }
         }
         await _store.SaveAsync(ct).ConfigureAwait(false);
-        return done > 0 ? TweakResult.Ok($"Przywrócono poprzedni DNS ({done} kart).") : TweakResult.Fail("Nie udało się przywrócić DNS.");
+        return done > 0 ? TweakResult.Ok($"Previous DNS restored ({done} adapters).") : TweakResult.Fail("Could not restore DNS.");
     }
 }

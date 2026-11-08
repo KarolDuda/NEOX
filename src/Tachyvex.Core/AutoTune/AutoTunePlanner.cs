@@ -10,6 +10,8 @@ namespace Tachyvex.Core.AutoTune;
 public sealed class AutoTunePlanner
 {
     private readonly TweakCatalog _catalog;
+    public const string AlreadyAppliedReason = "already applied";
+
     public AutoTunePlanner(TweakCatalog catalog) => _catalog = catalog;
 
     private static readonly HashSet<string> LaptopOnlyExcluded = new()
@@ -20,18 +22,18 @@ public sealed class AutoTunePlanner
     /// <summary>Pozycje zmieniające komfort lub zachowanie systemu: Auto-Tune ich nie rusza (można je włączyć ręcznie).</summary>
     private static readonly Dictionary<string, string> AlwaysExcluded = new()
     {
-        ["ultimate_plan"] = "koliduje z planem wysokiej wydajności; wybierz ręcznie, jeśli chcesz",
-        ["fast_startup_off"] = "dotyczy czasu startu, nie gier",
-        ["toasts_off"] = "wyłącza powiadomienia, więc to Twoja decyzja",
-        ["onedrive_off"] = "wyłącza synchronizację, więc to Twoja decyzja",
-        ["store_autodl"] = "zmienia zachowanie Sklepu, więc to Twoja decyzja",
-        ["hover_time"] = "kosmetyka interfejsu",
-        ["ink_workspace_off"] = "wyłącza funkcję pisma odręcznego",
-        ["net_connectivity_probe_off"] = "może pogorszyć wykrywanie sieci",
-        ["netbios_off"] = "może zepsuć udziały sieciowe w domu lub firmie",
-        ["prio_sep"] = "mały i trudny do zmierzenia efekt",
-        ["ui_priority_boost"] = "mały i trudny do zmierzenia efekt",
-        ["bg_access_off"] = "ogranicza aplikacje UWP w tle",
+        ["ultimate_plan"] = "conflicts with the high-performance plan; pick it manually if you want it",
+        ["fast_startup_off"] = "affects boot time, not gaming",
+        ["toasts_off"] = "turns off notifications, so it is your call",
+        ["onedrive_off"] = "turns off syncing, so it is your call",
+        ["store_autodl"] = "changes Store behavior, so it is your call",
+        ["hover_time"] = "cosmetic UI change",
+        ["ink_workspace_off"] = "turns off the handwriting feature",
+        ["net_connectivity_probe_off"] = "may worsen network detection",
+        ["netbios_off"] = "may break network shares at home or at work",
+        ["prio_sep"] = "small effect that is hard to measure",
+        ["ui_priority_boost"] = "small effect that is hard to measure",
+        ["bg_access_off"] = "limits background UWP apps",
     };
 
     public AutoTunePlan Plan(HardwareProfile hw, bool elevated, Func<string, bool>? alreadyApplied = null)
@@ -55,19 +57,19 @@ public sealed class AutoTunePlanner
     private static string? Exclusion(TweakDefinition t, HardwareProfile hw, bool elevated, Func<string, bool>? applied)
     {
         if (AlwaysExcluded.TryGetValue(t.Id, out var why)) return why;
-        if (applied?.Invoke(t.Id) == true) return "już zastosowane";
-        if (t.RequiresAdmin && !elevated) return "wymaga administratora";
-        if (hw.IsLaptop && LaptopOnlyExcluded.Contains(t.Id)) return "laptop: zachowujemy oszczędzanie baterii i kultury pracy";
-        if (t.Id == "prefetch_off" && !hw.HasSsd) return "bez SSD Prefetch pomaga";
-        if (t.Id == "nopaging_exec" && hw.RamGb < 16) return "wymaga co najmniej 16 GB RAM";
-        if (t.Id == "core_parking" && hw.Threads < 6) return "mało wątków, więc nic to nie da";
+        if (applied?.Invoke(t.Id) == true) return AlreadyAppliedReason;
+        if (t.RequiresAdmin && !elevated) return "requires administrator";
+        if (hw.IsLaptop && LaptopOnlyExcluded.Contains(t.Id)) return "laptop: we keep battery saving and quiet operation";
+        if (t.Id == "prefetch_off" && !hw.HasSsd) return "Prefetch helps on drives without an SSD";
+        if (t.Id == "nopaging_exec" && hw.RamGb < 16) return "needs at least 16 GB of RAM";
+        if (t.Id == "core_parking" && hw.Threads < 6) return "too few threads for this to matter";
         return null;
     }
 
     private static string Why(TweakDefinition t, HardwareProfile hw) => t.Category switch
     {
-        TweakCategory.Input => "mniejsze opóźnienie i spójniejsze sterowanie",
-        TweakCategory.Network => "stabilniejsza sieć w grach",
-        _ => hw.IsLaptop ? "niższe obciążenie systemu bez wpływu na baterię" : "mniej pracy systemu w tle podczas gry",
+        TweakCategory.Input => "lower latency and more consistent input",
+        TweakCategory.Network => "steadier network in games",
+        _ => hw.IsLaptop ? "lower system load with no battery impact" : "less background work while gaming",
     };
 }

@@ -28,46 +28,46 @@ public static class HealthScorer
         {
             i.WorstDiskFreePercent switch
             {
-                < 10 => new("Wolne miejsce na dysku", $"Zostało tylko {i.WorstDiskFreePercent:F0}% wolnego miejsca", 0.0, 25, FixKind.OpenDisk),
-                < 20 => new("Wolne miejsce na dysku", $"Wolne miejsce: {i.WorstDiskFreePercent:F0}% (zalecane powyżej 20%)", 0.5, 25, FixKind.OpenDisk),
-                _ => new("Wolne miejsce na dysku", $"Wolne miejsce: {i.WorstDiskFreePercent:F0}%", 1.0, 25, FixKind.None),
+                < 10 => new("Free disk space", $"Only {i.WorstDiskFreePercent:F0}% free space left", 0.0, 25, FixKind.OpenDisk),
+                < 20 => new("Free disk space", $"Free space: {i.WorstDiskFreePercent:F0}% (20%+ recommended)", 0.5, 25, FixKind.OpenDisk),
+                _ => new("Free disk space", $"Free space: {i.WorstDiskFreePercent:F0}%", 1.0, 25, FixKind.None),
             },
             i.UptimeDays switch
             {
-                > 14 => new("Czas od ostatniego restartu", $"System działa {i.UptimeDays:F0} dni bez restartu", 0.0, 15, FixKind.Restart),
-                > 7 => new("Czas od ostatniego restartu", $"System działa {i.UptimeDays:F0} dni bez restartu", 0.5, 15, FixKind.Restart),
-                _ => new("Czas od ostatniego restartu", "Niedawny restart", 1.0, 15, FixKind.None),
+                > 14 => new("Time since last restart", $"Up for {i.UptimeDays:F0} days without a restart", 0.0, 15, FixKind.Restart),
+                > 7 => new("Time since last restart", $"Up for {i.UptimeDays:F0} days without a restart", 0.5, 15, FixKind.Restart),
+                _ => new("Time since last restart", "Restarted recently", 1.0, 15, FixKind.None),
             },
             i.StartupEnabledCount switch
             {
-                > 12 => new("Programy w autostarcie", $"{i.StartupEnabledCount} programów startuje z systemem", 0.0, 15, FixKind.OpenStartup),
-                > 8 => new("Programy w autostarcie", $"{i.StartupEnabledCount} programów startuje z systemem", 0.5, 15, FixKind.OpenStartup),
-                _ => new("Programy w autostarcie", $"{i.StartupEnabledCount} programów w autostarcie", 1.0, 15, FixKind.None),
+                > 12 => new("Startup programs", $"{i.StartupEnabledCount} programs start with Windows", 0.0, 15, FixKind.OpenStartup),
+                > 8 => new("Startup programs", $"{i.StartupEnabledCount} programs start with Windows", 0.5, 15, FixKind.OpenStartup),
+                _ => new("Startup programs", $"{i.StartupEnabledCount} startup programs", 1.0, 15, FixKind.None),
             },
             i.AttainableTweaks == 0
-                ? new("Zastosowane optymalizacje", "Brak dostępnych optymalizacji", 1.0, 30, FixKind.None)
+                ? new("Applied optimizations", "No optimizations available", 1.0, 30, FixKind.None)
                 : CoverageCheck(i),
             i.PendingRestart
-                ? new("Zmiany czekające na restart", "Część optymalizacji zadziała dopiero po restarcie", 0.0, 15, FixKind.Restart)
-                : new("Zmiany czekające na restart", "Brak oczekujących restartów", 1.0, 15, FixKind.None),
+                ? new("Changes waiting for a restart", "Some optimizations only take effect after a restart", 0.0, 15, FixKind.Restart)
+                : new("Changes waiting for a restart", "No pending restarts", 1.0, 15, FixKind.None),
             i.RamLoadPercent switch
             {
-                > 85 => new("Zajętość pamięci RAM", $"RAM zajęty w {i.RamLoadPercent}%", 0.0, 10, FixKind.OpenStartup),
-                > 70 => new("Zajętość pamięci RAM", $"RAM zajęty w {i.RamLoadPercent}%", 0.5, 10, FixKind.OpenStartup),
-                _ => new("Zajętość pamięci RAM", $"RAM zajęty w {i.RamLoadPercent}%", 1.0, 10, FixKind.None),
+                > 85 => new("Memory usage", $"RAM is {i.RamLoadPercent}% in use", 0.0, 10, FixKind.OpenStartup),
+                > 70 => new("Memory usage", $"RAM is {i.RamLoadPercent}% in use", 0.5, 10, FixKind.OpenStartup),
+                _ => new("Memory usage", $"RAM is {i.RamLoadPercent}% in use", 1.0, 10, FixKind.None),
             },
         };
 
         var total = checks.Sum(c => c.Weight);
         var score = (int)Math.Round(checks.Sum(c => c.Score * c.Weight) / total * 100.0);
-        var label = score switch { >= 90 => "Znakomicie", >= 75 => "Dobrze", >= 55 => "Można poprawić", _ => "Wymaga uwagi" };
+        var label = score switch { >= 90 => "Excellent", >= 75 => "Good", >= 55 => "Could be better", _ => "Needs attention" };
         return new HealthReport(score, label, checks);
     }
 
     private static HealthCheck CoverageCheck(HealthInput i)
     {
         var ratio = Math.Clamp(i.AppliedTweaks / (double)i.AttainableTweaks, 0, 1);
-        var detail = $"Zastosowano {i.AppliedTweaks} z {i.AttainableTweaks} bezpiecznych optymalizacji";
-        return new("Zastosowane optymalizacje", detail, ratio, 30, ratio >= 0.99 ? FixKind.None : FixKind.ApplySafeProfile);
+        var detail = $"Applied {i.AppliedTweaks} of {i.AttainableTweaks} safe optimizations";
+        return new("Applied optimizations", detail, ratio, 30, ratio >= 0.99 ? FixKind.None : FixKind.ApplySafeProfile);
     }
 }

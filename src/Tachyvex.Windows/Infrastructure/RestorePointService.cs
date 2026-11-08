@@ -14,6 +14,6 @@ public sealed class RestorePointService : IRestorePointService
         var r = await _run.RunAsync(ProcessRunner.PowerShell(
             $"Checkpoint-Computer -Description '{safe}' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop"), TimeSpan.FromSeconds(180), ct);
         return r.Success ? TweakResult.Ok("Punkt przywracania utworzony.")
-                         : TweakResult.Fail(string.IsNullOrEmpty(r.FirstLine) ? "Ochrona systemu może być wyłączona." : r.FirstLine);
+                         : TweakResult.Fail(string.IsNullOrEmpty(r.FirstLine) ? "System Protection may be turned off." : r.FirstLine);
     }
 }

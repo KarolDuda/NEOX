@@ -83,12 +83,12 @@ public sealed partial class PowerHandler : ITweakHandler
 
     public async Task<JsonNode?> ApplyAsync(TweakDefinition t, TweakContext c, CancellationToken ct)
     {
-        var scheme = await ActiveSchemeAsync(ct) ?? throw new TweakException("Nie udało się odczytać aktywnego planu zasilania.");
+        var scheme = await ActiveSchemeAsync(ct) ?? throw new TweakException("Could not read the active power plan.");
         if (t.Kind == TweakKind.PowerIdx)
         {
             var p = t.Power!;
             var old = await GetAcValueAsync(p.Subgroup, p.Setting, ct)
-                ?? throw new TweakException("Ten plan zasilania nie udostępnia tego ustawienia.");
+                ?? throw new TweakException("This power plan does not expose this setting.");
             await SetAcAsync(scheme, p.Subgroup, p.Setting, p.Value, ct);
             await SetActiveAsync(scheme, ct);
             return new JsonObject { ["scheme"] = scheme, ["sub"] = p.Subgroup, ["setting"] = p.Setting, ["old"] = old };
@@ -105,12 +105,12 @@ public sealed partial class PowerHandler : ITweakHandler
                 var dup = await _run.RunAsync(new[] { "powercfg", "/duplicatescheme", target }, null, ct);
                 var m = GuidRx().Match(dup.Output);
                 if (dup.Success && m.Success) created = m.Value.ToLowerInvariant();
-                else created = await CreateCustomPlanAsync(ct) ?? throw new TweakException("Windows nie udostępnia tego planu zasilania i nie udało się utworzyć własnego.");
+                else created = await CreateCustomPlanAsync(ct) ?? throw new TweakException("Windows does not provide this power plan and a custom one could not be created.");
                 var act = await _run.RunAsync(new[] { "powercfg", "/setactive", created }, null, ct);
                 if (!act.Success)
                 {
                     await _run.RunAsync(new[] { "powercfg", "/delete", created }, null, ct);
-                    throw new TweakException("Nie udało się włączyć planu zasilania: " + act.FirstLine);
+                    throw new TweakException("Could not activate the power plan: " + act.FirstLine);
                 }
             }
         }
@@ -130,7 +130,7 @@ public sealed partial class PowerHandler : ITweakHandler
         }
         var prev = s["previous"]!.GetValue<string>();
         var r = await _run.RunAsync(new[] { "powercfg", "/setactive", prev }, null, ct);
-        if (!r.Success) throw new TweakException("Nie udało się przywrócić poprzedniego planu zasilania: " + r.FirstLine);
+        if (!r.Success) throw new TweakException("Could not restore the previous power plan: " + r.FirstLine);
         var created = s["created"]?.GetValue<string>();
         if (!string.IsNullOrEmpty(created)) await _run.RunAsync(new[] { "powercfg", "/delete", created }, null, ct);
     }
@@ -138,7 +138,7 @@ public sealed partial class PowerHandler : ITweakHandler
     private async Task SetAcAsync(string scheme, string sub, string setting, int value, CancellationToken ct)
     {
         var r = await _run.RunAsync(new[] { "powercfg", "/setacvalueindex", scheme, sub, setting, value.ToString(CultureInfo.InvariantCulture) }, null, ct);
-        if (!r.Success) throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "powercfg: błąd ustawienia" : r.FirstLine);
+        if (!r.Success) throw new TweakException(string.IsNullOrEmpty(r.FirstLine) ? "powercfg: setting failed" : r.FirstLine);
     }
 
     private Task SetActiveAsync(string scheme, CancellationToken ct) =>
@@ -150,7 +150,7 @@ public sealed partial class PowerHandler : ITweakHandler
         var m = GuidRx().Match(dup.Output);
         if (!dup.Success || !m.Success) return null;
         var g = m.Value.ToLowerInvariant();
-        await _run.RunAsync(new[] { "powercfg", "/changename", g, "NEOX Performance", "Plan wydajności utworzony przez NEOX" }, null, ct);
+        await _run.RunAsync(new[] { "powercfg", "/changename", g, "NEOX Performance", "Performance plan created by NEOX" }, null, ct);
         foreach (var (sub, setting, value) in CustomPlanSettings)
             await _run.RunAsync(new[] { "powercfg", "/setacvalueindex", g, sub, setting, value.ToString(CultureInfo.InvariantCulture) }, null, ct);
         return g;

@@ -5,8 +5,8 @@ public sealed record HardwareProfile(int Cores, int Threads, long RamBytes, bool
 {
     public double RamGb => RamBytes / 1073741824.0;
     public string Describe() =>
-        $"{Cores} rdzeni / {Threads} wątków · RAM {RamGb:F0} GB · {(IsLaptop ? "laptop" : "komputer stacjonarny")} · " +
-        $"{(HasSsd ? "SSD" : "dysk bez SSD lub typ nieznany")} · {(HasDiscreteGpu ? "karta dedykowana" : "grafika zintegrowana lub nieznana")}";
+        $"{Cores} cores / {Threads} threads · RAM {RamGb:F0} GB · {(IsLaptop ? "laptop" : "desktop")} · " +
+        $"{(HasSsd ? "SSD" : "no SSD detected")} · {(HasDiscreteGpu ? "dedicated GPU" : "integrated or unknown GPU")}";
 }
 
 public interface IHardwareScanner
@@ -34,10 +34,10 @@ public static class BenchmarkComparer
 
     public static IReadOnlyList<MetricDelta> Compare(BenchmarkResult before, BenchmarkResult after) => new[]
     {
-        Make("Wydajność CPU (test syntetyczny)", "Mops/s", before.CpuOpsPerSec / 1e6, after.CpuOpsPerSec / 1e6, true, ThroughputNoisePercent),
-        Make("Przepustowość pamięci RAM", "MB/s", before.MemoryMBps, after.MemoryMBps, true, ThroughputNoisePercent),
-        Make("Opóźnienie timera (średnia)", "ms", before.TimerAvgMs, after.TimerAvgMs, false, LatencyNoisePercent),
-        Make("Opóźnienie timera (99 percentyl)", "ms", before.TimerP99Ms, after.TimerP99Ms, false, LatencyNoisePercent),
+        Make("CPU performance (synthetic test)", "Mops/s", before.CpuOpsPerSec / 1e6, after.CpuOpsPerSec / 1e6, true, ThroughputNoisePercent),
+        Make("Memory bandwidth", "MB/s", before.MemoryMBps, after.MemoryMBps, true, ThroughputNoisePercent),
+        Make("Timer latency (average)", "ms", before.TimerAvgMs, after.TimerAvgMs, false, LatencyNoisePercent),
+        Make("Timer latency (99th percentile)", "ms", before.TimerP99Ms, after.TimerP99Ms, false, LatencyNoisePercent),
     };
 
     public static MetricDelta Make(string name, string unit, double before, double after, bool higherIsBetter, double noisePercent)

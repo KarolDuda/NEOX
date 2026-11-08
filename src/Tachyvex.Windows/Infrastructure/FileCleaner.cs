@@ -28,7 +28,7 @@ public sealed class FileCleaner
                 else if (File.Exists(match)) Delete(match, ref bytes, ref files, ct);
             }
         }
-        return $"Usunięto {files} plików ({bytes / 1048576.0:F0} MB).";
+        return $"Removed {files} files ({bytes / 1048576.0:F0} MB).";
     }
 
     public long Measure(IEnumerable<string> patterns)
