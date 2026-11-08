@@ -1,0 +1,49 @@
+<UserControl
+    x:Class="Neox.App.Controls.TweakCard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid x:Name="Root">
+        <Border x:Name="Card" Style="{StaticResource CardStyle}">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Width="42" Height="42" VerticalAlignment="Top">
+                    <Ellipse x:Name="Ring" Stroke="{StaticResource CardBorderBrush}" StrokeThickness="2" />
+                    <FontIcon x:Name="IdleIcon" Glyph="&#xE7E8;" FontSize="16" Foreground="{StaticResource MutedBrush}" />
+                    <FontIcon x:Name="CheckIcon" Glyph="&#xE73E;" FontSize="20" Foreground="{StaticResource GoodBrush}" Opacity="0" />
+                </Grid>
+
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{x:Bind ViewModel.Title, Mode=OneWay}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
+                        <Border CornerRadius="6" Padding="8,2" Background="#14FFFFFF" VerticalAlignment="Center">
+                            <TextBlock x:Name="RiskLabel" FontSize="11" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind ViewModel.Description, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.Consequences, Mode=OneWay}" Visibility="{x:Bind ViewModel.ConsequencesVisibility, Mode=OneWay}"
+                               Style="{StaticResource MutedTextStyle}" FontSize="12" Opacity="0.75" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{x:Bind ViewModel.AdminText, Mode=OneWay}" Foreground="{StaticResource WarnBrush}" FontSize="12" />
+                        <TextBlock Text="{x:Bind ViewModel.RestartText, Mode=OneWay}" Foreground="{StaticResource WarnBrush}" FontSize="12" />
+                        <TextBlock x:Name="StatusLabel" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" Foreground="{StaticResource GoodBrush}" FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="6" MinWidth="120">
+                    <Button x:Name="PrimaryButton" Content="{x:Bind ViewModel.ActionText, Mode=OneWay}" Command="{x:Bind ViewModel.PrimaryCommand}"
+                            IsEnabled="{x:Bind ViewModel.IsIdle, Mode=OneWay}" HorizontalAlignment="Stretch" />
+                    <ProgressBar IsIndeterminate="True" Visibility="{x:Bind ViewModel.BusyVisibility, Mode=OneWay}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border x:Name="Glow" CornerRadius="12" BorderThickness="2" BorderBrush="{StaticResource AccentBrush}" Opacity="0" IsHitTestVisible="False" />
+        <Ellipse x:Name="Wave" Width="42" Height="42" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="16,16,0,0"
+                 Stroke="{StaticResource AccentBrush}" StrokeThickness="2" Opacity="0" IsHitTestVisible="False" />
+    </Grid>
+</UserControl>

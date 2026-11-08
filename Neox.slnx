@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Neox.Core/Neox.Core.csproj" />
+    <Project Path="src/Neox.Windows/Neox.Windows.csproj" />
+    <Project Path="src/Neox.App/Neox.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Neox.Tests/Neox.Tests.csproj" />
+    <Project Path="tests/Neox.Tests.Windows/Neox.Tests.Windows.csproj" />
+  </Folder>
+</Solution>

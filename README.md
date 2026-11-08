@@ -15,9 +15,9 @@ Aplikacja do optymalizacji Windows 10/11 pod gry: 253 ustawienia z opisem korzy�
 
 ## Struktura
 ```
-src/Tachyvex.Core       katalog, silnik, profile, magazyn stanu (bez Windows API)
-src/Tachyvex.Windows    rejestr, powercfg, usługi, bcdedit, sieć, monitoring, czyszczenie
-src/Tachyvex.App        interfejs WinUI 3 (MVVM, DI, Serilog)
+src/Neox.Core       katalog, silnik, profile, magazyn stanu (bez Windows API)
+src/Neox.Windows    rejestr, powercfg, usługi, bcdedit, sieć, monitoring, czyszczenie
+src/Neox.App        interfejs WinUI 3 (MVVM, DI, Serilog)
 tests/                  xUnit (Core i warstwa Windows)
 installer/              Inno Setup
 docs/                   architektura, plan testów

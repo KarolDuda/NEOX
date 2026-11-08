@@ -1,0 +1,11 @@
+<ResourceDictionary
+    x:Class="Neox.App.Styles.Templates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Neox.App.ViewModels"
+    xmlns:ctl="using:Neox.App.Controls">
+
+    <DataTemplate x:Key="TweakTemplate" x:DataType="vm:TweakItemViewModel">
+        <ctl:TweakCard />
+    </DataTemplate>
+</ResourceDictionary>

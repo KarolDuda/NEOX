@@ -20,26 +20,26 @@ jobs:
       - name: Znajdź projekt (działa też, gdy pliki leżą w podfolderze)
         shell: pwsh
         run: |
-          $csproj = Get-ChildItem -Path . -Recurse -Filter Tachyvex.App.csproj | Select-Object -First 1
+          $csproj = Get-ChildItem -Path . -Recurse -Filter Neox.App.csproj | Select-Object -First 1
           if (-not $csproj) {
-            Write-Host "Nie znaleziono Tachyvex.App.csproj. Zawartość repozytorium:"
+            Write-Host "Nie znaleziono Neox.App.csproj. Zawartość repozytorium:"
             Get-ChildItem -Recurse -Depth 3 | Select-Object -First 80 FullName
-            throw "W repozytorium brakuje folderu src/Tachyvex.App. Wgraj wszystkie foldery projektu."
+            throw "W repozytorium brakuje folderu src/Neox.App. Wgraj wszystkie foldery projektu."
           }
           $root = $csproj.Directory.Parent.Parent.FullName
           Write-Host "Katalog główny projektu: $root"
           "PROJECT_ROOT=$root" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          if (-not (Test-Path "$root\installer\tachyvex.iss")) { throw "Brakuje installer\tachyvex.iss" }
+          if (-not (Test-Path "$root\installer\neox.iss")) { throw "Brakuje installer\neox.iss" }
 
       - name: Publikuj aplikację (x64, self-contained)
         shell: pwsh
-        run: dotnet publish "$env:PROJECT_ROOT\src\Tachyvex.App\Tachyvex.App.csproj" -c Release -r win-x64 --self-contained true -p:Version=2.0.${{ github.run_number }} -o "$env:PROJECT_ROOT\publish"
+        run: dotnet publish "$env:PROJECT_ROOT\src\Neox.App\Neox.App.csproj" -c Release -r win-x64 --self-contained true -p:Version=3.0.${{ github.run_number }} -o "$env:PROJECT_ROOT\publish"
 
       - name: Diagnostyka kompilatora XAML (tylko przy błędzie)
         if: failure()
         shell: pwsh
         run: |
-          $obj = Get-ChildItem -Path "$env:PROJECT_ROOT\src\Tachyvex.App\obj" -Recurse -Filter input.json | Select-Object -First 1
+          $obj = Get-ChildItem -Path "$env:PROJECT_ROOT\src\Neox.App\obj" -Recurse -Filter input.json | Select-Object -First 1
           Write-Host "input: $($obj.FullName)"
           $dir = $obj.DirectoryName
           $xc = Get-ChildItem "$env:USERPROFILE\.nuget\packages\microsoft.windowsappsdk.winui" -Recurse -Filter XamlCompiler.exe | Select-Object -First 1
@@ -57,13 +57,13 @@ jobs:
 
       - name: Zbuduj instalator
         shell: pwsh
-        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=2.0.${{ github.run_number }} "$env:PROJECT_ROOT\installer\tachyvex.iss"'
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=3.0.${{ github.run_number }} "$env:PROJECT_ROOT\installer\neox.iss"'
 
       - name: Opublikuj instalator w Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0.${{ github.run_number }}
-          name: NEOX 2.0 (build ${{ github.run_number }})
+          tag_name: v3.0.${{ github.run_number }}
+          name: NEOX 3.0 RECODE (build ${{ github.run_number }})
           files: |
             **/Neox_Setup.exe
           body: Pobierz Neox_Setup.exe i uruchom. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji, Uruchom mimo to).
@@ -73,5 +73,5 @@ jobs:
         continue-on-error: true
         shell: pwsh
         run: |
-          dotnet test "$env:PROJECT_ROOT\tests\Tachyvex.Tests" -c Release
-          dotnet test "$env:PROJECT_ROOT\tests\Tachyvex.Tests.Windows" -c Release
+          dotnet test "$env:PROJECT_ROOT\tests\Neox.Tests" -c Release
+          dotnet test "$env:PROJECT_ROOT\tests\Neox.Tests.Windows" -c Release

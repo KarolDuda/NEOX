@@ -1,8 +1,8 @@
 # Plan testów
 
 ## Automatyczne (GitHub Actions, `windows-latest`)
-- `tests/Tachyvex.Tests`: katalog (253 unikalne, kompletność danych, brak usług krytycznych i kluczy wyłączających Defendera/Update), silnik (zastosuj/cofnij, weryfikacja i automatyczne cofnięcie, odmowa bez admina, historia), profile, porównanie przed/po, magazyn stanu (odzysk po uszkodzeniu).
-- `tests/Tachyvex.Tests.Windows`: prawdziwy rejestr (HKCU, wszystkie typy wartości), czyszczenie plików, parsowanie.
+- `tests/Neox.Tests`: katalog (253 unikalne, kompletność danych, brak usług krytycznych i kluczy wyłączających Defendera/Update), silnik (zastosuj/cofnij, weryfikacja i automatyczne cofnięcie, odmowa bez admina, historia), profile, porównanie przed/po, magazyn stanu (odzysk po uszkodzeniu).
+- `tests/Neox.Tests.Windows`: prawdziwy rejestr (HKCU, wszystkie typy wartości), czyszczenie plików, parsowanie.
 
 ## Ręczne na Windows 10/11 (przed uznaniem za gotowe)
 1. Utwórz punkt przywracania. Uruchom bez admina: sprawdź, że zmiany wymagające admina są zablokowane z komunikatem.
