@@ -98,5 +98,32 @@ public static class Fx
         v.StartAnimation("Opacity", a);
     }
 
+    /// <summary>Powolny dryf (pętla) elementu w tle, np. poświaty aurory.</summary>
+    public static void Drift(UIElement e, float dx, float dy, int periodMs, int delayMs = 0)
+    {
+        ElementCompositionPreview.SetIsTranslationEnabled(e, true);
+        var v = V(e); var c = v.Compositor;
+        var ease = c.CreateCubicBezierEasingFunction(new Vector2(0.4f, 0f), new Vector2(0.6f, 1f));
+        var a = c.CreateVector3KeyFrameAnimation();
+        a.InsertKeyFrame(0f, Vector3.Zero);
+        a.InsertKeyFrame(0.5f, new Vector3(dx, dy, 0f), ease);
+        a.InsertKeyFrame(1f, Vector3.Zero, ease);
+        a.Duration = TimeSpan.FromMilliseconds(periodMs);
+        a.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        a.IterationBehavior = AnimationIterationBehavior.Forever;
+        v.StartAnimation("Translation", a);
+    }
+
+    /// <summary>Przesuwa element płynnie (np. wskaźnik zaznaczenia w menu) do pozycji Y.</summary>
+    public static void SlideTo(FrameworkElement e, float y, int durationMs = 320)
+    {
+        ElementCompositionPreview.SetIsTranslationEnabled(e, true);
+        var v = V(e); var c = v.Compositor;
+        var a = c.CreateVector3KeyFrameAnimation();
+        a.InsertKeyFrame(1f, new Vector3(0f, y, 0f), c.CreateCubicBezierEasingFunction(new Vector2(0.2f, 0.9f), new Vector2(0.2f, 1f)));
+        a.Duration = TimeSpan.FromMilliseconds(durationMs);
+        v.StartAnimation("Translation", a);
+    }
+
     public static void StopBreathe(UIElement e) => V(e).StopAnimation("Opacity");
 }

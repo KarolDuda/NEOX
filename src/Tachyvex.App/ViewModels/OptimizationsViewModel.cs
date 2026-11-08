@@ -46,13 +46,13 @@ public sealed partial class TweakItemViewModel : ObservableObject
 
     public string Title => Tweak.Title;
     public string Description => Tweak.Description;
-    public string Consequences => Tweak.IsAction ? "" : "Wady / skutki: " + Tweak.Consequences;
+    public string Consequences => Tweak.IsAction ? "" : "Downsides / effects: " + Tweak.Consequences;
     public Visibility ConsequencesVisibility => Tweak.IsAction ? Visibility.Collapsed : Visibility.Visible;
-    public string AdminText => Tweak.RequiresAdmin ? "Wymaga administratora" : "";
-    public string RestartText => Tweak.Restart switch { RestartRequirement.Restart => "Wymaga restartu", RestartRequirement.Logout => "Wymaga wylogowania", _ => "" };
+    public string AdminText => Tweak.RequiresAdmin ? "Requires administrator" : "";
+    public string RestartText => Tweak.Restart switch { RestartRequirement.Restart => "Requires restart", RestartRequirement.Logout => "Requires sign-out", _ => "" };
     public string RiskText => Tweak.IsAction ? "Akcja" : Tweak.Risk switch
     {
-        RiskLevel.Recommended => "Zalecane", RiskLevel.Caution => "Ostrożnie", RiskLevel.Experimental => "Eksperymentalne", _ => "Wysokie ryzyko"
+        RiskLevel.Recommended => "Recommended", RiskLevel.Caution => "Caution", RiskLevel.Experimental => "Experimental", _ => "High risk"
     };
     public Brush RiskBrush => ThemeBrushes.Resource(Tweak.IsAction ? "MutedBrush" : Tweak.Risk switch
     {
@@ -66,7 +66,7 @@ public sealed partial class TweakItemViewModel : ObservableObject
 
     partial void OnIsAppliedChanged(bool value) { OnPropertyChanged(nameof(ActionText)); UpdateStatusText(); _changed?.Invoke(); }
 
-    private void UpdateStatusText() => StatusText = Tweak.IsAction ? "" : IsApplied ? "● Zastosowane" : "";
+    private void UpdateStatusText() => StatusText = Tweak.IsAction ? "" : IsApplied ? "● Applied" : "";
 
     public void SetFromStatus(TweakStatus s)
     {
@@ -93,8 +93,8 @@ public sealed partial class TweakItemViewModel : ObservableObject
     {
         if (Tweak.Risk == RiskLevel.HighRisk || Tweak.Risk == RiskLevel.Experimental)
         {
-            var head = Tweak.Risk == RiskLevel.HighRisk ? "To zmiana o WYSOKIM ryzyku." : "To ustawienie eksperymentalne; efekt zależy od sprzętu.";
-            var ok = await _dialogs.ConfirmAsync(Tweak.Title, $"{head}\n\n{Tweak.Description}\n\nSkutki: {Tweak.Consequences}\n\nPrzed zmianą zapisujemy kopię zapasową i możesz ją cofnąć w tej samej karcie.", "Rozumiem, zastosuj");
+            var head = Tweak.Risk == RiskLevel.HighRisk ? "This is a HIGH-risk change." : "This setting is experimental; the effect depends on hardware.";
+            var ok = await _dialogs.ConfirmAsync(Tweak.Title, $"{head}\n\n{Tweak.Description}\n\nEffects: {Tweak.Consequences}\n\nWe save a backup before changing anything, and you can undo it on the same card.", "I understand, apply");
             if (!ok) return;
         }
         var r = await _engine.ApplyAsync(Tweak.Id, _ctx.Current);
@@ -120,9 +120,9 @@ public sealed partial class TweakItemViewModel : ObservableObject
 
     private async Task Report(TweakResult r)
     {
-        var suffix = r.Success && r.Restart != RestartRequirement.None ? (r.Restart == RestartRequirement.Restart ? " Wymagany restart." : " Wymagane wylogowanie.") : "";
+        var suffix = r.Success && r.Restart != RestartRequirement.None ? (r.Restart == RestartRequirement.Restart ? " Restart required." : " Sign-out required.") : "";
         _notify($"{Tweak.Title}: {r.Message}{suffix}");
-        if (!r.Success) await _dialogs.InfoAsync("Nie udało się", $"{Tweak.Title}\n\n{r.Message}");
+        if (!r.Success) await _dialogs.InfoAsync("Failed", $"{Tweak.Title}\n\n{r.Message}");
     }
 }
 
@@ -134,8 +134,8 @@ public sealed partial class OptimizationsViewModel : ObservableObject
     private CancellationTokenSource? _refreshCts;
 
     public ObservableCollection<TweakItemViewModel> Items { get; } = new();
-    public IReadOnlyList<string> Categories { get; } = new[] { "Wszystkie", "Wydajność", "Input delay", "Sieć", "Prywatność", "Usługi i zadania", "Wygląd", "Czyszczenie", "Narzędzia" };
-    public IReadOnlyList<string> Risks { get; } = new[] { "Każde ryzyko", "Zalecane", "Ostrożnie", "Eksperymentalne", "Wysokie ryzyko" };
+    public IReadOnlyList<string> Categories { get; } = new[] { "All", "Performance", "Input delay", "Network", "Privacy", "Services & tasks", "Appearance", "Cleanup", "Tools" };
+    public IReadOnlyList<string> Risks { get; } = new[] { "Any risk", "Recommended", "Caution", "Experimental", "High risk" };
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private int _categoryIndex;
@@ -185,7 +185,7 @@ public sealed partial class OptimizationsViewModel : ObservableObject
                            || i.Tweak.Id.Contains(q, StringComparison.OrdinalIgnoreCase))).ToList();
         Items.Clear();
         foreach (var r in rows) Items.Add(r);
-        Counter = $"{rows.Count} z {_all.Count}";
+        Counter = $"{rows.Count} of {_all.Count}";
     }
 
     /// <summary>Odczytuje rzeczywisty stan wszystkich ustawień w tle, po jednym, bez blokowania UI.</summary>
@@ -204,9 +204,9 @@ public sealed partial class OptimizationsViewModel : ObservableObject
                 cts.Token.ThrowIfCancellationRequested();
                 var s = await _engine.GetStatusAsync(item.Tweak.Id, ctx, cts.Token);
                 item.SetFromStatus(s);
-                if (++done % 10 == 0) StatusMessage = $"Odczyt stanu… {done}";
+                if (++done % 10 == 0) StatusMessage = $"Reading state… {done}";
             }
-            StatusMessage = "Stany odświeżone.";
+            StatusMessage = "States refreshed.";
         }
         catch (OperationCanceledException) { }
         finally { if (_refreshCts == cts) IsRefreshing = false; }

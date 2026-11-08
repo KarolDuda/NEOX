@@ -2,21 +2,21 @@
     <Grid Padding="28,8,28,16" RowSpacing="12">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Spacing="16">
-            <TextBlock Text="Optymalizacje" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Text="Optimizations" Style="{StaticResource PageTitleStyle}" />
             <Border CornerRadius="14" Padding="12,4" Background="#1822D3EE" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon Glyph="&#xE73E;" FontSize="13" Foreground="{StaticResource AccentBrush}" />
                     <TextBlock Foreground="{StaticResource AccentBrush}" FontSize="13" Text="{x:Bind ViewModel.AppliedCount, Mode=OneWay}" />
-                    <TextBlock Foreground="{StaticResource AccentBrush}" FontSize="13" Text="zastosowanych" />
+                    <TextBlock Foreground="{StaticResource AccentBrush}" FontSize="13" Text="applied" />
                 </StackPanel>
             </Border>
         </StackPanel>
         <Grid Grid.Row="1" ColumnSpacing="10">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="180"/><ColumnDefinition Width="180"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <TextBox PlaceholderText="Szukaj ustawień (nazwa, opis)…" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox PlaceholderText="Search settings (name, description)…" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.Categories}" SelectedIndex="{x:Bind ViewModel.CategoryIndex, Mode=TwoWay}" />
             <ComboBox Grid.Column="2" HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.Risks}" SelectedIndex="{x:Bind ViewModel.RiskIndex, Mode=TwoWay}" />
-            <Button Grid.Column="3" Content="Odśwież stany" Command="{x:Bind ViewModel.RefreshStatesCommand}" Style="{StaticResource GhostButtonStyle}" />
+            <Button Grid.Column="3" Content="Refresh states" Command="{x:Bind ViewModel.RefreshStatesCommand}" Style="{StaticResource GhostButtonStyle}" />
         </Grid>
         <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12">
             <TextBlock Text="{x:Bind ViewModel.Counter, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" VerticalAlignment="Center" />

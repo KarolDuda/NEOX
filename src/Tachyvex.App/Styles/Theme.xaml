@@ -4,8 +4,8 @@
 
     <Color x:Key="BgDeep">#05070D</Color>
     <Color x:Key="BgNavy">#0A1226</Color>
-    <Color x:Key="CardColor">#0E1627</Color>
-    <Color x:Key="CardBorderColor">#1B2745</Color>
+    <Color x:Key="CardColor">#D90E1627</Color>
+    <Color x:Key="CardBorderColor">#2A2F4A6B</Color>
     <Color x:Key="AccentColor">#22D3EE</Color>
     <Color x:Key="AccentDeepColor">#0EA5E9</Color>
 
@@ -32,18 +32,21 @@
         <Setter Property="Background" Value="{StaticResource CardBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Padding" Value="20" />
     </Style>
 
     <Style x:Key="PageTitleStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="28" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="FontSize" Value="34" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Margin" Value="0,4,0,6" />
         <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
     </Style>
 
     <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+        <Setter Property="FontSize" Value="17" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
     </Style>
@@ -56,13 +59,45 @@
     <Style x:Key="AccentButtonStyleX" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
         <Setter Property="Background" Value="{StaticResource AccentGradientBrush}" />
         <Setter Property="Foreground" Value="#021018" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="20,10" />
     </Style>
 
     <Style x:Key="GhostButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="Background" Value="#14FFFFFF" />
+        <Setter Property="BorderBrush" Value="#2222D3EE" />
+        <Setter Property="Padding" Value="16,9" />
+    </Style>
+
+    <LinearGradientBrush x:Key="NavSelectedBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#3322D3EE" Offset="0" />
+        <GradientStop Color="#0A22D3EE" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Pozycja menu bocznego: szklana, z poświatą przy zaznaczeniu -->
+    <Style x:Key="NavItemStyle" TargetType="ListViewItem">
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ListViewItemPresenter
+                        CornerRadius="14" Padding="14,0"
+                        SelectionIndicatorVisualEnabled="False"
+                        SelectedBackground="{StaticResource NavSelectedBrush}"
+                        SelectedPointerOverBackground="{StaticResource NavSelectedBrush}"
+                        SelectedPressedBackground="{StaticResource NavSelectedBrush}"
+                        PointerOverBackground="#14FFFFFF"
+                        PressedBackground="#1EFFFFFF"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Center" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Panel boczny i tło treści -->

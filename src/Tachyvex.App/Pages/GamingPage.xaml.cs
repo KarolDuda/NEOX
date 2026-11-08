@@ -24,14 +24,14 @@ public sealed partial class GamingPage : Page
         try
         {
             var picker = new FileSavePicker { SuggestedFileName = string.Concat(p.Name.Where(c => !Path.GetInvalidFileNameChars().Contains(c))) is { Length: > 0 } n ? n : "profil" };
-            picker.FileTypeChoices.Add("Profil NEOX (JSON)", new List<string> { ".json" });
+            picker.FileTypeChoices.Add("NEOX profile (JSON)", new List<string> { ".json" });
             Init(picker);
             var file = await picker.PickSaveFileAsync();
             if (file is null) return;
             await File.WriteAllTextAsync(file.Path, ViewModel.ExportJson(p));
-            ViewModel.Message = $"Wyeksportowano profil „{p.Name}”.";
+            ViewModel.Message = $"Exported profile “{p.Name}”.";
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ViewModel.Message = "Nie udało się zapisać pliku: " + ex.Message; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ViewModel.Message = "Could not save the file: " + ex.Message; }
     }
 
     private async void OnImport(object sender, RoutedEventArgs e)
@@ -43,10 +43,10 @@ public sealed partial class GamingPage : Page
             Init(picker);
             var file = await picker.PickSingleFileAsync();
             if (file is null) return;
-            if (new FileInfo(file.Path).Length > Tachyvex.Core.Profiles.ProfileTransfer.MaxBytes) { ViewModel.Message = "Plik jest zbyt duży na profil."; return; }
+            if (new FileInfo(file.Path).Length > Tachyvex.Core.Profiles.ProfileTransfer.MaxBytes) { ViewModel.Message = "The file is too large to be a profile."; return; }
             await ViewModel.ImportJsonAsync(await File.ReadAllTextAsync(file.Path));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ViewModel.Message = "Nie udało się odczytać pliku: " + ex.Message; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { ViewModel.Message = "Could not read the file: " + ex.Message; }
     }
 
     private async void OnApply(object sender, RoutedEventArgs e)

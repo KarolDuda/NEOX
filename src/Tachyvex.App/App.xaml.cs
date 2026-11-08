@@ -29,7 +29,7 @@ public partial class App : Application
         UnhandledException += (_, e) =>
         {
             // Nie zamykamy po cichu: zapisujemy do logu i pokazujemy komunikat zamiast znikać.
-            Log.Error(e.Exception, "Nieobsłużony wyjątek");
+            Log.Error(e.Exception, "Unhandled exception");
             e.Handled = true;
         };
     }
@@ -46,7 +46,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Błąd uruchamiania");
+            Log.Error(ex, "Startup error");
         }
         MainWindow = new MainWindow();
         MainWindow.Activate();

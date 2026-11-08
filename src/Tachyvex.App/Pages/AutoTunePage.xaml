@@ -15,20 +15,20 @@
                     </Border.Background>
                     <StackPanel Spacing="10">
                         <TextBlock Text="AUTO-TUNE" FontSize="12" CharacterSpacing="250" Foreground="{StaticResource AccentBrush}" />
-                        <TextBlock Text="Dobierzemy optymalizacje do Twojego sprzętu" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
+                        <TextBlock Text="We tune NEOX to your hardware" FontSize="30" FontWeight="Bold" TextWrapping="Wrap" Foreground="{StaticResource TextBrush}" />
                         <TextBlock Text="{x:Bind ViewModel.HardwareText, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
-                        <ToggleSwitch Header="Zmierz komputer przed i po (uczciwe porównanie z progiem szumu)" IsOn="{x:Bind ViewModel.Measure, Mode=TwoWay}" OnContent="Tak" OffContent="Nie" />
+                        <ToggleSwitch Header="Measure before and after (honest comparison with a noise threshold)" IsOn="{x:Bind ViewModel.Measure, Mode=TwoWay}" OnContent="Yes" OffContent="No" />
                         <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,6,0,0">
                             <Grid>
                                 <Border x:Name="RunGlow" CornerRadius="14" Background="{StaticResource AccentGradientBrush}" Margin="-6" Opacity="0.3" IsHitTestVisible="False" />
                                 <Button Command="{x:Bind ViewModel.RunCommand}" IsEnabled="{x:Bind ViewModel.CanRun, Mode=OneWay}" Style="{StaticResource AccentButtonStyleX}" Padding="30,14" CornerRadius="12">
                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                         <FontIcon Glyph="&#xE945;" FontSize="18" />
-                                        <TextBlock Text="URUCHOM AUTO-TUNE" FontSize="16" FontWeight="Bold" CharacterSpacing="100" />
+                                        <TextBlock Text="RUN AUTO-TUNE" FontSize="16" FontWeight="Bold" CharacterSpacing="100" />
                                     </StackPanel>
                                 </Button>
                             </Grid>
-                            <Button Content="Przerwij" Command="{x:Bind ViewModel.CancelCommand}" Style="{StaticResource GhostButtonStyle}" IsEnabled="{x:Bind ViewModel.Busy, Mode=OneWay}" />
+                            <Button Content="Cancel" Command="{x:Bind ViewModel.CancelCommand}" Style="{StaticResource GhostButtonStyle}" IsEnabled="{x:Bind ViewModel.Busy, Mode=OneWay}" />
                             <ProgressRing IsActive="{x:Bind ViewModel.Busy, Mode=OneWay}" Width="26" Height="26" VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{x:Bind ViewModel.Status, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />
@@ -68,13 +68,13 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock Text="{x:Bind ViewModel.Note, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
-                        <Button Content="Cofnij wszystko z Auto-Tune" Command="{x:Bind ViewModel.UndoCommand}" IsEnabled="{x:Bind ViewModel.CanUndo, Mode=OneWay}" Style="{StaticResource GhostButtonStyle}" />
+                        <Button Content="Undo everything from Auto-Tune" Command="{x:Bind ViewModel.UndoCommand}" IsEnabled="{x:Bind ViewModel.CanUndo, Mode=OneWay}" Style="{StaticResource GhostButtonStyle}" />
                     </StackPanel>
                 </Border>
 
                 <Border x:Name="PlanCard" Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Plan dla Twojego komputera" Style="{StaticResource SectionTitleStyle}" />
+                        <TextBlock Text="Your plan" Style="{StaticResource SectionTitleStyle}" />
                         <ItemsControl ItemsSource="{x:Bind ViewModel.Planned}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:PlanRow">

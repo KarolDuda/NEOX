@@ -22,10 +22,10 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Spacing="10" VerticalAlignment="Center">
-                            <TextBlock Text="GOTOWY DO GRY?" FontSize="12" CharacterSpacing="250" Foreground="{StaticResource AccentBrush}" />
-                            <TextBlock Text="Optymalizacja jednym kliknięciem" FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
+                            <TextBlock Text="READY TO PLAY?" FontSize="12" CharacterSpacing="250" Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="One-click optimization" FontSize="32" FontWeight="Bold" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
                             <TextBlock Style="{StaticResource MutedTextStyle}" MaxWidth="560"
-                                       Text="Zastosuje bezpieczny profil Gaming. Zobaczysz listę zmian przed startem, a każdą zmianę cofniesz w Historii." />
+                                       Text="Applies the safe Gaming profile. You see the list of changes before anything happens, and every change can be undone in History." />
                             <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,8,0,0">
                                 <Grid>
                                     <Border x:Name="BoostGlow" CornerRadius="14" Background="{StaticResource AccentGradientBrush}" Margin="-6" Opacity="0.3" IsHitTestVisible="False" />
@@ -33,7 +33,7 @@
                                             Padding="30,14" CornerRadius="12" IsEnabled="{x:Bind ViewModel.IsIdle, Mode=OneWay}">
                                         <StackPanel Orientation="Horizontal" Spacing="10">
                                             <FontIcon Glyph="&#xE945;" FontSize="18" />
-                                            <TextBlock Text="OPTYMALIZUJ" FontSize="16" FontWeight="Bold" CharacterSpacing="100" />
+                                            <TextBlock Text="OPTIMIZE" FontSize="16" FontWeight="Bold" CharacterSpacing="100" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
@@ -45,7 +45,7 @@
 
                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="150">
                             <TextBlock Text="{x:Bind ViewModel.AppliedCount, Mode=OneWay}" FontSize="64" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" />
-                            <TextBlock Text="aktywnych zmian" Style="{StaticResource MutedTextStyle}" HorizontalAlignment="Center" />
+                            <TextBlock Text="active changes" Style="{StaticResource MutedTextStyle}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -65,7 +65,7 @@
                             </Grid>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                 <TextBlock Text="CPU" Style="{StaticResource SectionTitleStyle}" />
-                                <TextBlock Text="obciążenie procesora" Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="processor load" Style="{StaticResource MutedTextStyle}" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -114,8 +114,8 @@
                             <TextBlock Text="{x:Bind ViewModel.HealthLabel, Mode=OneWay}" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                            <TextBlock Text="Zdrowie systemu" Style="{StaticResource SectionTitleStyle}" />
-                            <TextBlock Text="Wynik liczymy z jawnych reguł: miejsce na dysku, restart, autostart, zastosowane optymalizacje i RAM." Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
+                            <TextBlock Text="System health" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="The score comes from transparent rules: disk space, restart, startup apps, applied optimizations and RAM." Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap" />
                             <ItemsControl ItemsSource="{x:Bind ViewModel.HealthChecks}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HealthRow">
@@ -138,14 +138,14 @@
                 <!-- KOMPUTER -->
                 <Border x:Name="CardHw" Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Twój komputer" Style="{StaticResource SectionTitleStyle}" />
+                        <TextBlock Text="Your PC" Style="{StaticResource SectionTitleStyle}" />
                         <TextBlock Text="{x:Bind ViewModel.Hardware, Mode=OneWay}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         <TextBlock Text="{x:Bind ViewModel.Health, Mode=OneWay}" Style="{StaticResource MutedTextStyle}" />
                     </StackPanel>
                 </Border>
 
                 <!-- PROFILE -->
-                <TextBlock Text="Profile" Style="{StaticResource SectionTitleStyle}" Margin="2,6,0,0" />
+                <TextBlock Text="Profiles" Style="{StaticResource SectionTitleStyle}" Margin="2,6,0,0" />
                 <GridView ItemsSource="{x:Bind ViewModel.Profiles}" SelectionMode="None" IsItemClickEnabled="False">
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="core:Profile">
@@ -154,7 +154,7 @@
                                     <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                     <TextBlock Text="{x:Bind Name}" FontSize="17" FontWeight="SemiBold" />
                                     <TextBlock Grid.Row="1" Text="{x:Bind Description}" Style="{StaticResource MutedTextStyle}" TextTrimming="CharacterEllipsis" />
-                                    <Button Grid.Row="2" Content="Zastosuj profil" Style="{StaticResource AccentButtonStyleX}" Click="OnApplyProfile" Tag="{x:Bind}" />
+                                    <Button Grid.Row="2" Content="Apply profile" Style="{StaticResource AccentButtonStyleX}" Click="OnApplyProfile" Tag="{x:Bind}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -162,7 +162,7 @@
                 </GridView>
 
                 <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Button Content="Utwórz punkt przywracania" Command="{x:Bind ViewModel.RestorePointCommand}" Style="{StaticResource GhostButtonStyle}" />
+                    <Button Content="Create restore point" Command="{x:Bind ViewModel.RestorePointCommand}" Style="{StaticResource GhostButtonStyle}" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
@@ -178,7 +178,7 @@
                 </Grid>
                 <TextBlock x:Name="OverlayTitle" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center" />
                 <TextBlock x:Name="OverlayText" Style="{StaticResource MutedTextStyle}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="460" />
-                <Button Content="Super" Style="{StaticResource AccentButtonStyleX}" HorizontalAlignment="Center" Click="OnCloseOverlay" Padding="34,10" />
+                <Button Content="Great" Style="{StaticResource AccentButtonStyleX}" HorizontalAlignment="Center" Click="OnCloseOverlay" Padding="34,10" />
             </StackPanel>
         </Grid>
     </Grid>

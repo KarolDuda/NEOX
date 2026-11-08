@@ -33,9 +33,9 @@ public sealed partial class DashboardPage : Page
 
     private void OnProfileApplied(ProfileApplyReport rep)
     {
-        OverlayTitle.Text = rep.Failed == 0 ? $"Zastosowano {rep.Applied} optymalizacji" : $"Zastosowano {rep.Applied}, błędów: {rep.Failed}";
-        OverlayText.Text = (rep.Restart != RestartRequirement.None ? "Aby wszystkie zmiany zadziałały, uruchom ponownie komputer. " : "")
-                           + "Każdą zmianę możesz cofnąć w zakładce Historia.";
+        OverlayTitle.Text = rep.Failed == 0 ? $"Applied {rep.Applied} optimizations" : $"Applied {rep.Applied}, failed: {rep.Failed}";
+        OverlayText.Text = (rep.Restart != RestartRequirement.None ? "Restart your PC so all changes take effect. " : "")
+                           + "You can undo every change in the History tab.";
         Overlay.Visibility = Visibility.Visible;
         Fx.SlideIn(Overlay, 0, 0, 250);
         Fx.Pop(BigCheck, 120);

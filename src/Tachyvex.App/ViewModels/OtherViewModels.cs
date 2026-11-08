@@ -46,8 +46,8 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty] private double _gpu;
     [ObservableProperty] private string _cpuText = "–";
     [ObservableProperty] private string _ramText = "–";
-    [ObservableProperty] private string _gpuText = "niedostępne";
-    [ObservableProperty] private string _hardware = "Odczyt sprzętu…";
+    [ObservableProperty] private string _gpuText = "n/a";
+    [ObservableProperty] private string _hardware = "Reading hardware…";
     [ObservableProperty] private string _health = "";
     [ObservableProperty] private string _message = "";
     [ObservableProperty] private bool _busy;
@@ -60,7 +60,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly HealthProbe _probe;
 
     [ObservableProperty] private int _healthScore;
-    [ObservableProperty] private string _healthLabel = "Sprawdzam…";
+    [ObservableProperty] private string _healthLabel = "Checking…";
     public ObservableCollection<HealthRow> HealthChecks { get; } = new();
     /// <summary>Wynik zdrowia gotowy: strona animuje licznik od 0.</summary>
     public event Action<int>? HealthComputed;
@@ -87,7 +87,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Cpu = s.CpuPercent; CpuText = $"{s.CpuPercent:F0}%";
         RamPct = $"{s.RamPercent}%";
         Ram = s.RamPercent; RamText = $"{s.RamPercent}%  ({Fmt.Bytes(s.RamUsedBytes)} / {Fmt.Bytes(s.RamTotalBytes)})";
-        if (s.GpuPercent is { } g) { Gpu = g; GpuText = $"{g:F0}%"; GpuPct = $"{g:F0}%"; } else { Gpu = 0; GpuText = "niedostępne na tym sprzęcie"; GpuPct = "–"; }
+        if (s.GpuPercent is { } g) { Gpu = g; GpuText = $"{g:F0}%"; GpuPct = $"{g:F0}%"; } else { Gpu = 0; GpuText = "not available on this hardware"; GpuPct = "–"; }
     });
 
     /// <summary>Monitoring działa tylko, gdy strona jest widoczna.</summary>
@@ -104,11 +104,11 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                 cpu is null ? null : $"CPU: {cpu.Name}",
                 gpus.Count == 0 ? null : "GPU: " + string.Join("; ", gpus.Select(g => g.Name)),
                 $"RAM: {Fmt.Bytes(SystemInfo.TotalRamBytes())}",
-                os is null ? null : $"System: {os.Caption} (build {os.Build})",
+                os is null ? null : $"OS: {os.Caption} (build {os.Build})",
             }.Where(x => x is not null));
             var vols = SystemInfo.Volumes();
             var low = vols.Where(v => v.TotalBytes > 0 && v.FreeBytes < v.TotalBytes * 0.10).Select(v => v.Name).ToList();
-            var health = low.Count == 0 ? "Dyski: wolne miejsce w normie." : "Mało wolnego miejsca (<10%): " + string.Join(", ", low);
+            var health = low.Count == 0 ? "Disks: free space is fine." : "Low free space (<10%): " + string.Join(", ", low);
             return (hw, health);
         });
         Hardware = info.hw; Health = info.health;
@@ -127,15 +127,15 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             HealthScore = r.Score; HealthLabel = r.Label;
             HealthComputed?.Invoke(r.Score);
         }
-        catch (Exception ex) { HealthLabel = "Nie udało się ocenić systemu: " + ex.Message; }
+        catch (Exception ex) { HealthLabel = "Could not assess the system: " + ex.Message; }
     }
 
     private static string FixLabel(FixKind k) => k switch
     {
         FixKind.ApplySafeProfile => "Napraw",
-        FixKind.OpenStartup => "Przejdź do autostartu",
-        FixKind.OpenDisk => "Przejdź do dysku",
-        FixKind.Restart => "Jak to zrobić",
+        FixKind.OpenStartup => "Go to Startup",
+        FixKind.OpenDisk => "Go to Disk",
+        FixKind.Restart => "How to do it",
         _ => "",
     };
 
@@ -150,7 +150,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             case FixKind.OpenStartup: App.MainWindow?.Navigate("managers"); break;
             case FixKind.OpenDisk: App.MainWindow?.Navigate("disk"); break;
             case FixKind.Restart:
-                await _dialogs.InfoAsync("Restart komputera", "Zapisz pracę i uruchom komputer ponownie (Start → Zasilanie → Uruchom ponownie). Nie robimy tego za Ciebie bez pytania.");
+                await _dialogs.InfoAsync("Restart your PC", "Save your work and restart the PC (Start → Power → Restart). We never do this for you without asking.");
                 break;
         }
     }
@@ -161,18 +161,18 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private async Task ApplyProfileAsync(Profile p)
     {
         if (Busy) return;
-        var list = string.Join("\n", p.TweakIds.Take(12).Select(id => "• " + _engine.Catalog.Get(id).Title)) + (p.TweakIds.Count > 12 ? $"\n… i {p.TweakIds.Count - 12} więcej" : "");
-        if (!await _dialogs.ConfirmAsync($"Profil „{p.Name}”", $"{p.Description}\n\nZmian: {p.TweakIds.Count}\n{list}\n\nKażda zmiana ma kopię zapasową i można ją cofnąć w Historii.", "Zastosuj profil")) return;
+        var list = string.Join("\n", p.TweakIds.Take(12).Select(id => "• " + _engine.Catalog.Get(id).Title)) + (p.TweakIds.Count > 12 ? $"\n… and {p.TweakIds.Count - 12} more" : "");
+        if (!await _dialogs.ConfirmAsync($"Profile “{p.Name}”", $"{p.Description}\n\nChanges: {p.TweakIds.Count}\n{list}\n\nEvery change is backed up and can be undone in History.", "Apply profile")) return;
         Busy = true;
         try
         {
             var progress = new Progress<string>(s => Message = s);
             var rep = await _profiles.ApplyAsync(p, _ctx.Current, progress);
-            Message = $"Zastosowano {rep.Applied}, pominięto {rep.Skipped}, błędów {rep.Failed}.";
+            Message = $"Applied {rep.Applied}, skipped {rep.Skipped}, failed {rep.Failed}.";
             _opt.ReloadAppliedFlags();
             AppliedCount = _store.State.Snapshots.Count;
             if (rep.Applied > 0) ProfileApplied?.Invoke(rep);
-            else await _dialogs.InfoAsync("Wynik profilu", string.Join("\n", rep.Lines));
+            else await _dialogs.InfoAsync("Profile result", string.Join("\n", rep.Lines));
         }
         finally { Busy = false; }
     }
@@ -193,7 +193,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         {
             var r = await _restore.CreateAsync("NEOX", CancellationToken.None);
             Message = r.Message;
-            if (!r.Success) await _dialogs.InfoAsync("Punkt przywracania", r.Message + "\n\nWymaga administratora i włączonej ochrony systemu (limit: 1 punkt na 24 h).");
+            if (!r.Success) await _dialogs.InfoAsync("Restore point", r.Message + "\n\nRequires administrator rights and System Protection turned on (limit: 1 point per 24 h).");
         }
         finally { Busy = false; }
     }
@@ -243,9 +243,9 @@ public sealed partial class GamingViewModel : ObservableObject
     {
         Profiles.Clear();
         foreach (var p in _profiles.All()) Profiles.Add(p);
-        FortniteInfo = !_fn.Exists ? "Nie znaleziono pliku ustawień Fortnite."
-            : _fn.PendingChanges().Count > 0 ? "Do zmiany: " + string.Join(", ", _fn.PendingChanges())
-            : "V-Sync i HDR już wyłączone.";
+        FortniteInfo = !_fn.Exists ? "Fortnite settings file not found."
+            : _fn.PendingChanges().Count > 0 ? "To change: " + string.Join(", ", _fn.PendingChanges())
+            : "V-Sync and HDR are already off.";
     }
 
     partial void OnGameBoostChanged(bool value)
@@ -264,12 +264,12 @@ public sealed partial class GamingViewModel : ObservableObject
     public async Task ImportJsonAsync(string json)
     {
         var r = _transfer.Import(json);
-        if (!r.Success) { Message = "Import nieudany: " + r.Error; return; }
+        if (!r.Success) { Message = "Import failed: " + r.Error; return; }
         _store.State.CustomProfiles.Add(r.Profile!);
         await _store.SaveAsync();
         Reload();
-        Message = $"Zaimportowano profil „{r.Profile!.Name}” ({r.Profile.TweakIds.Count} zmian)."
-                  + (r.Dropped > 0 ? $" Pominięto {r.Dropped} niedozwolonych lub nieznanych pozycji." : "");
+        Message = $"Imported profile “{r.Profile!.Name}” ({r.Profile.TweakIds.Count} changes)."
+                  + (r.Dropped > 0 ? $" Skipped {r.Dropped} disallowed or unknown entries." : "");
     }
 
     partial void OnGameExePathChanged(string value)
@@ -284,7 +284,7 @@ public sealed partial class GamingViewModel : ObservableObject
         var found = await Task.Run(GameDiscovery.Epic);
         Games.Clear();
         foreach (var g in found) Games.Add(g);
-        Message = found.Count == 0 ? "Nie wykryto gier Epic Games. Wskaż plik .exe ręcznie." : $"Wykryto gier: {found.Count}.";
+        Message = found.Count == 0 ? "No Epic Games titles detected. Pick the .exe manually." : $"Games detected: {found.Count}.";
     }
 
     [RelayCommand]
@@ -294,14 +294,14 @@ public sealed partial class GamingViewModel : ObservableObject
     private async Task ApplyProfileAsync(Profile p)
     {
         if (Busy) return;
-        if (!await _dialogs.ConfirmAsync($"Profil „{p.Name}”", $"{p.Description}\n\nZmian: {p.TweakIds.Count}. Zapisujemy kopie zapasowe; cofniesz je w Historii.", "Zastosuj")) return;
+        if (!await _dialogs.ConfirmAsync($"Profile “{p.Name}”", $"{p.Description}\n\nChanges: {p.TweakIds.Count}. Backups are saved; undo them in History.", "Zastosuj")) return;
         Busy = true;
         try
         {
             var rep = await _profiles.ApplyAsync(p, _ctx.Current, new Progress<string>(s => Message = s));
-            Message = $"Zastosowano {rep.Applied}, pominięto {rep.Skipped}, błędów {rep.Failed}.";
+            Message = $"Applied {rep.Applied}, skipped {rep.Skipped}, failed {rep.Failed}.";
             Optimizations.ReloadAppliedFlags();
-            await _dialogs.InfoAsync("Wynik profilu", string.Join("\n", rep.Lines));
+            await _dialogs.InfoAsync("Profile result", string.Join("\n", rep.Lines));
         }
         finally { Busy = false; }
     }
@@ -309,13 +309,13 @@ public sealed partial class GamingViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveCurrentAsProfileAsync()
     {
-        var name = await _dialogs.PromptAsync("Nowy profil z bieżących zmian", "Nazwa profilu");
+        var name = await _dialogs.PromptAsync("New profile from current changes", "Profile name");
         if (name is null) return;
         var ids = _store.State.Snapshots.Keys.ToList();
-        if (ids.Count == 0) { Message = "Brak zastosowanych zmian do zapisania."; return; }
-        await _profiles.SaveCustomAsync(name, ids, "Własny profil z zastosowanych zmian.");
+        if (ids.Count == 0) { Message = "No applied changes to save."; return; }
+        await _profiles.SaveCustomAsync(name, ids, "Custom profile from applied changes.");
         Reload();
-        Message = $"Zapisano profil „{name}” ({ids.Count} zmian).";
+        Message = $"Saved profile “{name}” ({ids.Count} changes).";
     }
 
     [RelayCommand]
@@ -371,9 +371,9 @@ public sealed partial class NetworkViewModel : ObservableObject
         foreach (var a in NetworkAdapters.GetActive())
         {
             var (dns, manual) = NetworkDiagnostics.AdapterDns(a.Guid);
-            Adapters.Add($"{a.Name} ({a.Type}) · {(a.SpeedMbps > 0 ? a.SpeedMbps + " Mb/s" : "?")} · IP {string.Join(", ", a.Addresses.Take(2))} · DNS {(dns.Length == 0 ? "—" : string.Join(", ", dns))} ({(manual ? "ręczny" : "automatyczny")})");
+            Adapters.Add($"{a.Name} ({a.Type}) · {(a.SpeedMbps > 0 ? a.SpeedMbps + " Mb/s" : "?")} · IP {string.Join(", ", a.Addresses.Take(2))} · DNS {(dns.Length == 0 ? "—" : string.Join(", ", dns))} ({(manual ? "manual" : "automatic")})");
         }
-        if (Adapters.Count == 0) Adapters.Add("Brak aktywnej karty sieciowej (Ethernet / Wi-Fi).");
+        if (Adapters.Count == 0) Adapters.Add("No active network adapter (Ethernet / Wi-Fi).");
     }
 
     [RelayCommand]
@@ -393,16 +393,16 @@ public sealed partial class NetworkViewModel : ObservableObject
     {
         PingRows.Clear();
         var targets = NetworkDiagnostics.PingTargets.ToList();
-        if (!string.IsNullOrWhiteSpace(CustomHost)) targets.Insert(0, ("Własny", CustomHost.Trim()));
+        if (!string.IsNullOrWhiteSpace(CustomHost)) targets.Insert(0, ("Custom", CustomHost.Trim()));
         for (var i = 0; i < targets.Count; i++)
         {
             Message = $"Ping: {targets[i].Name}…";
             var s = await _net.PingAsync(targets[i].Host, 8, 2000, null, ct);
-            PingRows.Add(new PingRow(targets[i].Name, s.Received == 0 ? "brak odpowiedzi" :
-                $"{s.AvgMs:F0} ms (min {s.MinMs:F0}, max {s.MaxMs:F0}) · jitter {s.JitterMs:F1} ms · utrata {s.LossPercent:F0}%"));
+            PingRows.Add(new PingRow(targets[i].Name, s.Received == 0 ? "no response" :
+                $"{s.AvgMs:F0} ms (min {s.MinMs:F0}, max {s.MaxMs:F0}) · jitter {s.JitterMs:F1} ms · loss {s.LossPercent:F0}%"));
             Progress = (i + 1) / (double)targets.Count;
         }
-        Message = "Test ping zakończony.";
+        Message = "Ping test finished.";
     });
 
     [RelayCommand]
@@ -419,18 +419,18 @@ public sealed partial class NetworkViewModel : ObservableObject
         }
         foreach (var r in results.OrderBy(r => r.MedianMs ?? double.MaxValue))
             DnsRows.Add(new DnsRow(r.Provider.Name, $"{r.Provider.Primary} / {r.Provider.Secondary}",
-                r.MedianMs is null ? "brak odpowiedzi" : $"{r.MedianMs:F0} ms (błędów: {r.Failures})"));
+                r.MedianMs is null ? "no response" : $"{r.MedianMs:F0} ms (failures: {r.Failures})"));
         var best = results.Where(r => r.MedianMs is not null && r.Failures <= 2).OrderBy(r => r.MedianMs).FirstOrDefault();
         _best = best?.Provider;
-        BestDns = best is null ? "" : $"Najszybszy: {best.Provider.Name} ({best.MedianMs:F0} ms)";
-        Message = "Test DNS zakończony. Wynik dotyczy Twojego łącza w tej chwili.";
+        BestDns = best is null ? "" : $"Fastest: {best.Provider.Name} ({best.MedianMs:F0} ms)";
+        Message = "DNS test finished. The result applies to your connection right now.";
     });
 
     [RelayCommand]
     private async Task UseBestDnsAsync()
     {
-        if (_best is null) { Message = "Najpierw uruchom test DNS."; return; }
-        if (!await _dialogs.ConfirmAsync("Zmiana DNS", $"Ustawić DNS na {_best.Name} ({_best.Primary} / {_best.Secondary}) na aktywnych kartach? Poprzednie ustawienia zostaną zapisane i można je przywrócić.", "Ustaw")) return;
+        if (_best is null) { Message = "Run the DNS test first."; return; }
+        if (!await _dialogs.ConfirmAsync("Change DNS", $"Set DNS to {_best.Name} ({_best.Primary} / {_best.Secondary}) on active adapters? Previous settings are saved and can be restored.", "Ustaw")) return;
         var r = await _net.SetDnsAsync(new[] { _best.Primary, _best.Secondary });
         Message = r.Message; LoadAdapters();
     }
@@ -441,9 +441,9 @@ public sealed partial class NetworkViewModel : ObservableObject
     [RelayCommand]
     private Task FindMtuAsync() => RunAsync(async ct =>
     {
-        Message = "Szukam MTU…";
+        Message = "Probing MTU…";
         var mtu = await _net.FindMtuAsync("1.1.1.1", ct);
-        MtuText = mtu is null ? "Brak odpowiedzi na ping (lub zablokowany ICMP)." : $"MTU: {mtu} bajtów" + (mtu < 1500 ? " (poniżej 1500; sprawdź łącze/VPN)" : "");
+        MtuText = mtu is null ? "No ping response (or ICMP is blocked)." : $"MTU: {mtu} bytes" + (mtu < 1500 ? " (below 1500; check your link/VPN)" : "");
         Message = "Gotowe.";
     });
 }
@@ -461,12 +461,12 @@ public sealed partial class SystemViewModel : ObservableObject
     public async Task LoadAsync()
     {
         var d = await Task.Run(() => (SystemInfo.Cpu(), SystemInfo.Gpus(), SystemInfo.TotalRamBytes(), SystemInfo.Os(), SystemInfo.Disks(), SystemInfo.Volumes()));
-        Cpu = d.Item1 is null ? "brak danych" : $"{d.Item1.Name}\n{d.Item1.Cores} rdzeni / {d.Item1.Threads} wątków · max {d.Item1.MaxMHz} MHz";
-        Gpu = d.Item2.Count == 0 ? "brak danych" : string.Join("\n", d.Item2.Select(g => $"{g.Name} · sterownik {g.DriverVersion} · {g.RefreshHz} Hz"));
+        Cpu = d.Item1 is null ? "no data" : $"{d.Item1.Name}\n{d.Item1.Cores} cores / {d.Item1.Threads} threads · max {d.Item1.MaxMHz} MHz";
+        Gpu = d.Item2.Count == 0 ? "no data" : string.Join("\n", d.Item2.Select(g => $"{g.Name} · driver {g.DriverVersion} · {g.RefreshHz} Hz"));
         Ram = Fmt.Bytes(d.Item3);
-        Os = d.Item4 is null ? "brak danych" : $"{d.Item4.Caption} · wersja {d.Item4.Version} · build {d.Item4.Build}\nOstatni start: {d.Item4.LastBoot:g}";
-        Disks.Clear(); foreach (var x in d.Item5) Disks.Add($"{x.Model} · {Fmt.Bytes(x.SizeBytes)} · stan: {x.Health}");
-        Volumes.Clear(); foreach (var v in d.Item6) Volumes.Add($"{v.Name} {v.Format} · wolne {Fmt.Bytes(v.FreeBytes)} z {Fmt.Bytes(v.TotalBytes)} ({(v.TotalBytes == 0 ? 0 : 100 - 100 * v.FreeBytes / v.TotalBytes)}% zajęte)");
+        Os = d.Item4 is null ? "no data" : $"{d.Item4.Caption} · version {d.Item4.Version} · build {d.Item4.Build}\nLast boot: {d.Item4.LastBoot:g}";
+        Disks.Clear(); foreach (var x in d.Item5) Disks.Add($"{x.Model} · {Fmt.Bytes(x.SizeBytes)} · health: {x.Health}");
+        Volumes.Clear(); foreach (var v in d.Item6) Volumes.Add($"{v.Name} {v.Format} · {Fmt.Bytes(v.FreeBytes)} free of {Fmt.Bytes(v.TotalBytes)} ({(v.TotalBytes == 0 ? 0 : 100 - 100 * v.FreeBytes / v.TotalBytes)}% used)");
     }
 }
 
@@ -502,8 +502,8 @@ public sealed partial class ManagersViewModel : ObservableObject
         var d = await Task.Run(() => (_startup.List(), _proc.Top(25), _svc.List()));
         Startup.Clear(); foreach (var e in d.Item1) Startup.Add(new StartupItemViewModel(_startup, e));
         Processes.Clear(); foreach (var p in d.Item2) Processes.Add(new ProcessRow(p.Name, Fmt.Bytes(p.WorkingSetBytes), $"{p.CpuSeconds:F0} s", p.Pid));
-        Services.Clear(); foreach (var s in d.Item3) Services.Add(new ServiceRow(s.DisplayName, s.Name, s.Status, s.StartType, s.IsCritical ? "krytyczna: nie modyfikujemy" : ""));
-        Message = $"Programy startowe: {Startup.Count} · usługi: {Services.Count}. Zmiany usług wprowadzasz w zakładce Optymalizacje (z kopią zapasową).";
+        Services.Clear(); foreach (var s in d.Item3) Services.Add(new ServiceRow(s.DisplayName, s.Name, s.Status, s.StartType, s.IsCritical ? "critical: we never modify it" : ""));
+        Message = $"Startup programs: {Startup.Count} · services: {Services.Count}. Change services in the Optimizations tab (with backup).";
     }
 }
 
@@ -533,9 +533,9 @@ public sealed partial class DiskViewModel : ObservableObject
         Busy = true; _cts = new CancellationTokenSource(); Folders.Clear();
         try
         {
-            var rows = await _analyzer.AnalyzeAsync(Drives[Math.Max(0, DriveIndex)], 25, new Progress<string>(s => Message = "Skanuję: " + s), _cts.Token);
+            var rows = await _analyzer.AnalyzeAsync(Drives[Math.Max(0, DriveIndex)], 25, new Progress<string>(s => Message = "Scanning: " + s), _cts.Token);
             foreach (var r in rows) Folders.Add(new FolderRow(r.Path, Fmt.Bytes(r.Bytes)));
-            Message = "Analiza zakończona (foldery najwyższego poziomu; niedostępne pomijane).";
+            Message = "Analysis finished (top-level folders; inaccessible ones skipped).";
         }
         catch (OperationCanceledException) { Message = "Przerwano."; }
         finally { Busy = false; }
@@ -568,19 +568,19 @@ public sealed partial class HistoryViewModel : ObservableObject
     {
         Rows.Clear();
         foreach (var h in _store.State.History.AsEnumerable().Reverse().Take(300))
-            Rows.Add(new HistoryRow(h.Time.ToString("g"), h.Action switch { HistoryAction.Apply => "Zastosowano", HistoryAction.Revert => "Cofnięto", HistoryAction.Run => "Uruchomiono", _ => "Profil" }, h.Title, h.Message, h.Success));
+            Rows.Add(new HistoryRow(h.Time.ToString("g"), h.Action switch { HistoryAction.Apply => "Applied", HistoryAction.Revert => "Reverted", HistoryAction.Run => "Ran", _ => "Profile" }, h.Title, h.Message, h.Success));
         Baselines.Clear();
         foreach (var b in _store.State.Baselines) Baselines.Add($"{b.Name} ({b.Time:g})");
-        Applied = $"Zmian możliwych do cofnięcia: {_store.State.Snapshots.Count}";
+        Applied = $"Changes that can be undone: {_store.State.Snapshots.Count}";
     }
 
     [RelayCommand]
     private async Task RevertAllAsync()
     {
-        if (_store.State.Snapshots.Count == 0) { Message = "Nie ma czego cofać."; return; }
-        if (!await _dialogs.ConfirmAsync("Cofnij wszystkie zmiany", $"Przywrócić poprzednie ustawienia dla {_store.State.Snapshots.Count} zmian wprowadzonych przez NEOX?", "Cofnij wszystko")) return;
+        if (_store.State.Snapshots.Count == 0) { Message = "Nothing to undo."; return; }
+        if (!await _dialogs.ConfirmAsync("Undo all changes", $"Restore previous settings for {_store.State.Snapshots.Count} changes made by NEOX?", "Undo everything")) return;
         Busy = true;
-        try { var n = await _profiles.RevertAllAsync(_ctx.Current); Message = $"Cofnięto: {n}. Pozostało: {_store.State.Snapshots.Count} (wymagają administratora lub nie udało się ich cofnąć)."; }
+        try { var n = await _profiles.RevertAllAsync(_ctx.Current); Message = $"Undone: {n}. Remaining: {_store.State.Snapshots.Count} (need administrator rights or could not be undone)."; }
         finally { Busy = false; }
         _opt.ReloadAppliedFlags(); Reload();
     }
@@ -588,10 +588,10 @@ public sealed partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     private async Task CaptureBaselineAsync()
     {
-        var name = await _dialogs.PromptAsync("Zapisz konfigurację", "Nazwa (np. Przed optymalizacją)");
+        var name = await _dialogs.PromptAsync("Save configuration", "Name (e.g. Before optimizing)");
         if (name is null) return;
-        Busy = true; Message = "Odczytuję stany ustawień…";
-        try { await _profiles.CaptureBaselineAsync(name, _ctx.Current); Message = "Zapisano konfigurację odniesienia."; }
+        Busy = true; Message = "Reading setting states…";
+        try { await _profiles.CaptureBaselineAsync(name, _ctx.Current); Message = "Baseline configuration saved."; }
         finally { Busy = false; }
         Reload();
     }
@@ -599,13 +599,13 @@ public sealed partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     private async Task CompareAsync()
     {
-        if (BaselineIndex < 0 || BaselineIndex >= _store.State.Baselines.Count) { Message = "Wybierz zapisaną konfigurację."; return; }
-        Busy = true; Message = "Porównuję…"; Diff.Clear();
+        if (BaselineIndex < 0 || BaselineIndex >= _store.State.Baselines.Count) { Message = "Pick a saved configuration."; return; }
+        Busy = true; Message = "Comparing…"; Diff.Clear();
         try
         {
             var diff = await _profiles.CompareAsync(_store.State.Baselines[BaselineIndex], _ctx.Current);
             foreach (var d in diff) Diff.Add(new DiffRow(d.Tweak.Title, Name(d.Before), Name(d.Now)));
-            Message = diff.Count == 0 ? "Brak różnic." : $"Różnic: {diff.Count}.";
+            Message = diff.Count == 0 ? "No differences." : $"Differences: {diff.Count}.";
         }
         finally { Busy = false; }
     }
@@ -624,7 +624,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _autoUpdate;
     [ObservableProperty] private string _updateStatus = "";
     [ObservableProperty] private bool _updateBusy;
-    public string AdminStatus => _elev.IsElevated ? "Uruchomiono jako administrator." : "Tryb standardowy: zmiany wymagające administratora są zablokowane.";
+    public string AdminStatus => _elev.IsElevated ? "Running as administrator." : "Standard mode: changes that need administrator rights are blocked.";
     public string LogPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Neox");
     public string Version => $"NEOX {UpdateService.Current} (WinUI 3, .NET 10)";
 
@@ -645,21 +645,21 @@ public sealed partial class SettingsViewModel : ObservableObject
     private async Task CheckUpdateAsync()
     {
         if (UpdateBusy) return;
-        UpdateBusy = true; UpdateStatus = "Sprawdzam…";
+        UpdateBusy = true; UpdateStatus = "Checking…";
         try
         {
             var (info, msg) = await _updates.CheckAsync();
             UpdateStatus = msg;
             if (info is null) return;
-            if (!await _dialogs.ConfirmAsync("Aktualizacja", $"Dostępna wersja {info.Version}. Pobrać i zainstalować teraz? Program zamknie się i uruchomi ponownie (pojawi się okno UAC).", "Zainstaluj")) return;
-            var progress = new Progress<double>(p => UpdateStatus = $"Pobieranie… {p:P0}");
+            if (!await _dialogs.ConfirmAsync("Aktualizacja", $"Version {info.Version} is available. Download and install now? The app will close and restart (a UAC prompt will appear).", "Zainstaluj")) return;
+            var progress = new Progress<double>(p => UpdateStatus = $"Downloading… {p:P0}");
             var path = await _updates.DownloadAsync(info, progress);
-            UpdateStatus = "Instaluję…";
+            UpdateStatus = "Installing…";
             if (_updates.LaunchInstaller(path)) Microsoft.UI.Xaml.Application.Current.Exit();
-            else UpdateStatus = "Instalacja anulowana (UAC).";
+            else UpdateStatus = "Installation cancelled (UAC).";
         }
         catch (Exception ex) when (ex is IOException or HttpRequestException)
-        { UpdateStatus = "Nie udało się pobrać aktualizacji: " + ex.Message; }
+        { UpdateStatus = "Could not download the update: " + ex.Message; }
         finally { UpdateBusy = false; }
     }
 
