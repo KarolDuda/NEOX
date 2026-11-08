@@ -7,6 +7,7 @@ namespace Neox.App.Pages;
 public sealed partial class SettingsPage : Page
 {
     public SettingsViewModel ViewModel { get; } = App.Get<SettingsViewModel>();
-    public SettingsPage() { InitializeComponent(); }
+    public SettingsPage() { InitializeComponent();
+        Loaded += (_, _) => Neox.App.Services.Fx.Cascade(this); }
 
 }

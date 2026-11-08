@@ -7,6 +7,7 @@ namespace Neox.App.Pages;
 public sealed partial class DiskPage : Page
 {
     public DiskViewModel ViewModel { get; } = App.Get<DiskViewModel>();
-    public DiskPage() { InitializeComponent(); }
+    public DiskPage() { InitializeComponent();
+        Loaded += (_, _) => Neox.App.Services.Fx.Cascade(this); }
 
 }

@@ -7,6 +7,7 @@ namespace Neox.App.Pages;
 public sealed partial class HistoryPage : Page
 {
     public HistoryViewModel ViewModel { get; } = App.Get<HistoryViewModel>();
-    public HistoryPage() { InitializeComponent(); }
+    public HistoryPage() { InitializeComponent();
+        Loaded += (_, _) => Neox.App.Services.Fx.Cascade(this); }
     protected override void OnNavigatedTo(NavigationEventArgs e) { base.OnNavigatedTo(e); ViewModel.Reload(); }
 }

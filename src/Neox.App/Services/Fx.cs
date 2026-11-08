@@ -1,6 +1,7 @@
 using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 
 namespace Neox.App.Services;
@@ -126,4 +127,31 @@ public static class Fx
     }
 
     public static void StopBreathe(UIElement e) => V(e).StopAnimation("Opacity");
+
+    /// <summary>Staggered entrance + hover lift for every CardStyle border on a page.</summary>
+    public static void Cascade(DependencyObject root, int max = 14)
+    {
+        try
+        {
+            if (!Application.Current.Resources.TryGetValue("CardStyle", out var st)) return;
+            var i = 0;
+            void Walk(DependencyObject d)
+            {
+                var n = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(d);
+                for (var k = 0; k < n && i < max; k++)
+                {
+                    var c = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(d, k);
+                    if (c is Border b && ReferenceEquals(b.Style, st))
+                    {
+                        SlideIn(b, 22, i * 70, 480);
+                        Hover(b, 1.004f);
+                        i++;
+                    }
+                    Walk(c);
+                }
+            }
+            Walk(root);
+        }
+        catch (Exception) { /* animations are cosmetic */ }
+    }
 }

@@ -11,7 +11,8 @@ namespace Neox.App.Pages;
 public sealed partial class GamingPage : Page
 {
     public GamingViewModel ViewModel { get; } = App.Get<GamingViewModel>();
-    public GamingPage() { InitializeComponent(); }
+    public GamingPage() { InitializeComponent();
+        Loaded += (_, _) => Neox.App.Services.Fx.Cascade(this); }
 
     protected override void OnNavigatedTo(NavigationEventArgs e) { base.OnNavigatedTo(e); ViewModel.Attach(); }
     protected override void OnNavigatedFrom(NavigationEventArgs e) { base.OnNavigatedFrom(e); ViewModel.Detach(); }

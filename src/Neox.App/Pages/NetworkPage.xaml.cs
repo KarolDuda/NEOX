@@ -7,6 +7,7 @@ namespace Neox.App.Pages;
 public sealed partial class NetworkPage : Page
 {
     public NetworkViewModel ViewModel { get; } = App.Get<NetworkViewModel>();
-    public NetworkPage() { InitializeComponent(); }
+    public NetworkPage() { InitializeComponent();
+        Loaded += (_, _) => Neox.App.Services.Fx.Cascade(this); }
 
 }
