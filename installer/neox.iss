@@ -5,7 +5,7 @@
 #define MyAppExe "Neox.exe"
 
 [Setup]
-; Stały AppId: kolejne wersje aktualizują zainstalowaną, zamiast instalować obok.
+; Fixed AppId: new versions upgrade the installed one instead of installing side by side.
 AppId={{7C2E9B14-3A58-4F0D-8B6E-1D95A0C4E7F3}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -18,7 +18,7 @@ VersionInfoProductName=NEOX
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-; Instalacja wymaga admina (Program Files); sama aplikacja startuje bez admina (asInvoker).
+; Installing to Program Files needs admin; the app itself starts without admin (asInvoker).
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -31,7 +31,7 @@ UninstallDisplayIcon={app}\{#MyAppExe}
 CloseApplications=yes
 
 [Languages]
-Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -44,6 +44,6 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExe}"; Description: "Uruchom {#MyAppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
-; Aktualizacja w tle (tryb cichy): uruchom program ponownie po instalacji, bez uprawnień administratora.
+Filename: "{app}\{#MyAppExe}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+; Background update (silent mode): relaunch the app after install, without admin rights.
 Filename: "{app}\{#MyAppExe}"; Flags: nowait runasoriginaluser; Check: WizardSilent

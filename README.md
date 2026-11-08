@@ -1,32 +1,31 @@
-# NEOX 2.0: optymalizator Windows (C# · .NET 10 · WinUI 3)
+# NEOX 3.0 RECODE: Windows optimizer (C# · .NET 10 · WinUI 3)
 
-Aplikacja do optymalizacji Windows 10/11 pod gry: 253 ustawienia z opisem korzyści i skutków, profile jednym kliknięciem, cofanie każdej zmiany, sieć, monitoring, menedżery startu / usług / procesów, analiza dysku.
+NEOX tunes Windows 10/11 for gaming. 253 documented tweaks with benefits and side effects, one-click profiles, undo for every change, network tools, monitoring, startup/service/process managers and disk analysis.
 
-## Instalator (gotowy plik, bez budowania u siebie)
-1. Utwórz prywatne repozytorium na github.com i wgraj całą zawartość tego folderu (razem z ukrytym `.github`) na gałąź `main`.
-2. Workflow **Build and test NEOX** uruchomi się sam (ok. 5–8 min). Gotowy `Neox_Setup.exe` pojawi się w **Releases** repozytorium.
-3. Pobierz, uruchom, zainstaluj. Instalator nie jest podpisany certyfikatem, więc SmartScreen może pokazać ostrzeżenie (Więcej informacji → Uruchom mimo to).
+## Install
+Download `Neox_Setup.exe` from the **Releases** page of this repository. It is built by GitHub Actions on every push to `main`. The installer is not code-signed, so SmartScreen may warn you (More info → Run anyway). NEOX updates itself in the background when auto-update is enabled.
 
-## Bezpieczeństwo
-- Brak usług krytycznych (Windows Update, Defender, Zapora, EventLog, RPC) i kluczy wyłączających Defendera/aktualizacje; sprawdzają to testy.
-- Każda zmiana: pełna migawka przed zmianą, odczyt po zmianie i automatyczne cofnięcie, jeśli system jej nie przyjął.
-- Pozycje wysokiego ryzyka wymagają osobnego potwierdzenia i nie wchodzą do żadnego profilu.
-- Start bez administratora; uprawnienia podnoszone tylko na żądanie.
+## Safety
+- No critical services (Windows Update, Defender, Firewall, EventLog, RPC) and no keys that disable Defender or updates. Tests enforce this.
+- Every change: full snapshot before, read-back after, automatic rollback if Windows did not accept it.
+- High-risk items need a separate confirmation and are never part of any profile.
+- Starts without administrator rights; elevation only on request.
 
-## Struktura
+## Features
+- **Auto-Tune**: scans hardware (laptop/desktop, RAM, SSD, GPU), picks only safe changes, shows the plan with reasons, optionally benchmarks before and after (changes under the noise threshold are not reported as gains), and undoes everything with one button. It does not promise FPS.
+- **System health**: a 0–100 score from explicit rules (disk, uptime, startup, applied tweaks, RAM) with Fix buttons.
+- **Game Boost**: switches power plan and process priority while a listed game runs; the previous plan is stored in `state.json`, so it is restored even after a crash.
+- **Profile export/import** (JSON), validated: unknown, service, experimental and high-risk entries are rejected.
+
+## Layout
 ```
-src/Neox.Core       katalog, silnik, profile, magazyn stanu (bez Windows API)
-src/Neox.Windows    rejestr, powercfg, usługi, bcdedit, sieć, monitoring, czyszczenie
-src/Neox.App        interfejs WinUI 3 (MVVM, DI, Serilog)
-tests/                  xUnit (Core i warstwa Windows)
-installer/              Inno Setup
-docs/                   architektura, plan testów
+src/Neox.Core       catalog, engine, profiles, state store (no Windows APIs)
+src/Neox.Windows    registry, powercfg, services, bcdedit, network, monitoring, cleanup
+src/Neox.App        WinUI 3 UI (MVVM, DI, Serilog)
+tests/              xUnit (Core and Windows layer)
+installer/          Inno Setup
+docs/               architecture, test plan
 ```
-Logi: `%LOCALAPPDATA%\Neox\logs`, stan i kopie zapasowe: `%LOCALAPPDATA%\Neox\state.json`.
+Logs: `%LOCALAPPDATA%\Neox\logs`. State and backups: `%LOCALAPPDATA%\Neox\state.json`.
 
-## Auto-Tune, zdrowie systemu i Game Boost
-
-- **Auto-Tune** skanuje sprzęt (laptop/desktop, RAM, SSD, GPU), dobiera wyłącznie bezpieczne zmiany (zalecane i ostrożne, bez usług), pokazuje plan z uzasadnieniem, opcjonalnie mierzy komputer przed i po (CPU, RAM, opóźnienie timera; zmiany poniżej progu szumu nie są podawane jako poprawa) i cofa wszystko jednym przyciskiem. To nie jest obietnica FPS.
-- **Zdrowie systemu** (Panel): wynik 0–100 z jawnych reguł (dysk, restart, autostart, zastosowane optymalizacje, RAM) z przyciskami „Napraw”.
-- **Game Boost**: na czas działania gry z listy przełącza plan zasilania i priorytet procesu; poprzedni plan zapisany w `state.json`, więc wraca nawet po awarii.
-- **Eksport/import profili** (JSON). Import jest walidowany: odrzuca nieznane, usługi, eksperymentalne i wysokiego ryzyka.
+Author and publisher: spinprint (spinprint.pl).
