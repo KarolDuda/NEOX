@@ -1,0 +1,48 @@
+name: NEOX RECODE (Windows build)
+on:
+  workflow_dispatch:
+  push:
+    branches: [recode]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      NEOX_VERSION: 3.1.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Test core and system layers (Windows)
+        run: cargo test --all-targets
+
+      - name: Build the app (release)
+        run: cargo build --release -p neox-app
+
+      - name: Stage files for the installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force publish | Out-Null
+          Copy-Item target\release\neox.exe publish\Neox.exe
+          Get-ChildItem publish | Format-Table Name, Length
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build the installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=3.1.${{ github.run_number }} installer\neox.iss'
+
+      - name: Publish as a pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: recode-${{ github.run_number }}
+          name: NEOX RECODE preview (build ${{ github.run_number }})
+          prerelease: true
+          files: installer/output/Neox_Setup.exe
+          body: Preview of the Rust + Tauri rewrite. Download Neox_Setup.exe and run it. The installer is not code-signed, so SmartScreen may warn you (More info, Run anyway).

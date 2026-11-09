@@ -46,6 +46,18 @@ pub fn set_startup_enabled(reg: &dyn RegistryApi, hive: &str, name: &str, enable
     reg.write(hive, APPROVED, Some(name), &RegData::Binary(data))
 }
 
+#[cfg(windows)]
+impl RegistryEnum for crate::registry::WinRegistry {
+    fn value_names(&self, hive: &str, path: &str) -> Vec<String> {
+        use winreg::enums::*;
+        use winreg::RegKey;
+        let root = if hive == "HKCU" { RegKey::predef(HKEY_CURRENT_USER) } else { RegKey::predef(HKEY_LOCAL_MACHINE) };
+        root.open_subkey_with_flags(path, KEY_READ)
+            .map(|k| k.enum_values().filter_map(|r| r.ok().map(|(n, _)| n)).collect())
+            .unwrap_or_default()
+    }
+}
+
 // ---------------------------------------------------------------- processes
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
