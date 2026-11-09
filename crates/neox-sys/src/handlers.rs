@@ -27,7 +27,7 @@ impl RegistryHandler {
                 if adapters.is_empty() { return Err("No active network adapter found.".into()); }
                 let spec = t.per_adapter.as_ref().ok_or("Missing per-adapter data")?;
                 Ok(adapters.iter().flat_map(|a| spec.values.iter().map(move |v| RegValueSpec {
-                    hive: v.hive.clone(), path: spec.path_template.replace("{guid}", &format!("{{{}}}", a.guid)),
+                    hive: "HKLM".into(), path: spec.path_template.replace("{guid}", &format!("{{{}}}", a.guid)),
                     name: v.name.clone(), ty: v.ty.clone(), value: v.value.clone() })).collect())
             }
             TweakKind::RegPerGame => {
