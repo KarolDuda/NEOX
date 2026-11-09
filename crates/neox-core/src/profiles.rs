@@ -57,6 +57,9 @@ fn is_profile_safe(t: &TweakDefinition) -> bool {
 }
 
 /// Built-in profiles are derived from the catalog by risk level, not from a hand-written list.
+/// Left out of "Maximum performance": conflicts with other items or only fixes specific symptoms.
+const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey"];
+
 pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
     let game_area = |t: &TweakDefinition| matches!(t.category, TweakCategory::Performance | TweakCategory::Input | TweakCategory::Network);
     let ids = |f: &dyn Fn(&TweakDefinition) -> bool| catalog.all().iter().filter(|t| f(t)).map(|t| t.id.clone()).collect::<Vec<_>>();
@@ -67,6 +70,9 @@ pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
         Profile { id: "builtin.gaming".into(), built_in: true, name: "Gaming".into(),
             description: "Recommended and cautious changes for performance, input and network. No services, experimental or high-risk items.".into(),
             tweak_ids: ids(&|t| t.is_simple() && game_area(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)) },
+        Profile { id: "builtin.max".into(), built_in: true, name: "Maximum performance".into(),
+            description: "Everything that can raise performance or cut latency: every performance, input and network tweak including high-risk ones (CPU mitigations, VBS/HVCI, hypervisor). Back up first; some items lower security and need a restart.".into(),
+            tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd | TweakKind::Cmd)) && game_area(t) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
         Profile { id: "builtin.privacy".into(), built_in: true, name: "Privacy".into(),
             description: "Recommended privacy settings (telemetry, ads, suggestions).".into(),
             tweak_ids: ids(&|t| !t.is_action() && t.category == TweakCategory::Privacy && t.risk == RiskLevel::Recommended) },

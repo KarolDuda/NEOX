@@ -4,9 +4,9 @@ use neox_core::models::*;
 fn cat() -> Catalog { Catalog::load_embedded().expect("catalog loads") }
 
 #[test]
-fn loads_all_253_items_with_unique_ids() {
+fn loads_all_260_items_with_unique_ids() {
     let c = cat();
-    assert_eq!(c.len(), 253);
+    assert_eq!(c.len(), 260);
 }
 
 #[test]
@@ -86,4 +86,15 @@ fn search_matches_title_text() {
     let c = cat();
     assert!(!c.search("hibernat", None, None).is_empty());
     assert!(c.search("zzzzzzzz-does-not-exist", None, None).is_empty());
+}
+
+#[test]
+fn max_profile_covers_the_high_risk_performance_items() {
+    let ps = neox_core::profiles::built_in(&cat());
+    let m = ps.iter().find(|p| p.id == "builtin.max").expect("max profile");
+    for id in ["cpu_mitigations_off", "hvci_off", "vbs_off", "hypervisor_off", "tsc_enhanced", "dynamic_tick"] {
+        assert!(m.tweak_ids.iter().any(|x| x == id), "{id}");
+    }
+    assert!(!m.tweak_ids.iter().any(|x| x == "ultimate_plan"));
+    assert!(m.tweak_ids.len() > 30);
 }

@@ -5367,6 +5367,182 @@
       "showsResult": false,
       "action": "open",
       "target": "https://www.intel.com/content/www/us/en/download-center/home.html"
+    },
+    {
+      "id": "cpu_mitigations_off",
+      "category": "performance",
+      "title": "Turn off CPU vulnerability mitigations (Spectre / Meltdown)",
+      "description": "Disables the kernel workarounds for Spectre and Meltdown. On older Intel CPUs (before 10th gen) it can noticeably cut system-call and I/O overhead; on new CPUs the gain is small because the protection is in hardware.",
+      "consequences": "Lowers protection against side-channel attacks from malicious code running on your PC. Revert from History at any time. Needs a restart.",
+      "kind": "reg",
+      "risk": "highRisk",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management",
+          "name": "FeatureSettingsOverride",
+          "type": "dword",
+          "value": 3
+        },
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management",
+          "name": "FeatureSettingsOverrideMask",
+          "type": "dword",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "page_combining_off",
+      "category": "performance",
+      "title": "Turn off memory page combining",
+      "description": "Stops Windows from scanning RAM for identical pages to merge. Saves a little background CPU and avoids occasional micro-stalls.",
+      "consequences": "Slightly higher RAM use on systems with many identical pages. Reversible.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management",
+          "name": "DisablePageCombining",
+          "type": "dword",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "foreground_lock_zero",
+      "category": "input",
+      "title": "Instant window focus switching",
+      "description": "Sets the foreground lock timeout to 0 so a game or app that asks for focus gets it immediately instead of flashing in the taskbar.",
+      "consequences": "Other apps can steal focus more easily while you work. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Desktop",
+          "name": "ForegroundLockTimeout",
+          "type": "dword",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "mouse_queue_small",
+      "category": "input",
+      "title": "Smaller mouse and keyboard input queues",
+      "description": "Reduces the driver data queue from 100 to 20 events, so input is handed to the game with less buffering. A small but measurable latency effect on busy systems.",
+      "consequences": "Very fast input bursts can overflow the queue on a heavily loaded PC. Reversible.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Services\\mouclass\\Parameters",
+          "name": "MouseDataQueueSize",
+          "type": "dword",
+          "value": 20
+        },
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Services\\kbdclass\\Parameters",
+          "name": "KeyboardDataQueueSize",
+          "type": "dword",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "id": "hvci_off",
+      "category": "performance",
+      "title": "Turn off Memory integrity (HVCI) only",
+      "description": "Disables hypervisor-enforced code integrity. In CPU-bound games it can recover several percent of FPS on systems where it is enabled.",
+      "consequences": "Drivers are no longer checked by the hypervisor, so malicious or vulnerable drivers are easier to load. Reversible; may be locked by UEFI or company policy.",
+      "kind": "reg",
+      "risk": "highRisk",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "large",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity",
+          "name": "Enabled",
+          "type": "dword",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "tsc_enhanced",
+      "category": "input",
+      "title": "Enhanced TSC synchronization",
+      "description": "bcdedit: tscsyncpolicy Enhanced. Uses the most accurate multi-core time-stamp counter sync, which can reduce timer jitter on some boards.",
+      "consequences": "Changes boot configuration and needs a restart. The effect depends on the motherboard and may be none; revert restores the default.",
+      "kind": "bcd",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "bcd": {
+        "key": "tscsyncpolicy",
+        "value": "Enhanced"
+      }
+    },
+    {
+      "id": "ntfs_8dot3_off",
+      "category": "performance",
+      "title": "Turn off NTFS 8.3 short file names",
+      "description": "Stops creating legacy DOS-style short names for every new file. Less disk metadata work, mostly useful on folders with many files.",
+      "consequences": "Very old 16-bit programs may not see short names for new files. The previous setting is restored on undo.",
+      "kind": "cmd",
+      "risk": "caution",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "small",
+      "cmd": {
+        "hasCheck": true,
+        "check": {
+          "regDword": {
+            "hive": "HKLM",
+            "path": "SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+            "name": "NtfsDisable8dot3NameCreation",
+            "expected": 1
+          }
+        },
+        "on": [
+          [
+            "fsutil",
+            "behavior",
+            "set",
+            "disable8dot3",
+            "1"
+          ]
+        ],
+        "off": [
+          [
+            "fsutil",
+            "behavior",
+            "set",
+            "disable8dot3",
+            "2"
+          ]
+        ]
+      }
     }
   ]
 }

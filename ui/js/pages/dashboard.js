@@ -43,7 +43,7 @@ function fixButton(c, go) {
   if (c.ok || c.fix === 'none') return null;
   const map = { applySafeProfile: ['Apply safe set', async () => {
       if (!(await confirmBox('Apply the Safe profile?', 'Only low-risk, reversible tweaks. A restore point is created first when possible, and everything can be undone from History.'))) return;
-      const r = await call('profile_apply', { id: 'safe', gameExe: null }); toast(`Applied ${r.applied}, failed ${r.failed}.`, r.failed ? 'err' : 'ok'); go('dashboard'); }],
+      const r = await call('profile_apply', { id: 'builtin.safe', gameExe: null }); toast(`Applied ${r.applied}, failed ${r.failed}.`, r.failed ? 'err' : 'ok'); go('dashboard'); }],
     openStartup: ['Open startup', () => go('startup')], openDisk: ['Analyze disk', () => go('disk')],
     restart: ['Restart later', () => toast('Restart Windows when convenient.', 'info')] };
   const m = map[c.fix]; if (!m) return null;

@@ -1,5 +1,5 @@
 import { call, on, win } from './api.js';
-import { h, toast, confirmBox, attachSpotlight } from './ui.js';
+import { h, toast, confirmBox, attachSpotlight, busy } from './ui.js';
 import { S, refreshInfo } from './state.js';
 
 const ICONS = {
@@ -56,6 +56,8 @@ async function boot() {
   fill.style.width = '100%';
   await go('dashboard');
   setTimeout(() => { const sp = document.getElementById('splash'); sp.classList.add('hide'); setTimeout(() => sp.remove(), 700); }, 450);
+  await new Promise(r => setTimeout(r, 650));
+  await backupWarning();
 
   if (S.info && !S.info.firstRunDone) setTimeout(async () => {
     const yes = await confirmBox('Welcome to NEOX', 'Run Auto-Tune now? It scans your hardware and applies only safe, reversible tweaks — you review the plan first.', 'Open Auto-Tune');
@@ -63,4 +65,23 @@ async function boot() {
   }, 900);
   if (S.info?.settings?.autoUpdate) call('update_check').then(r => { if (r?.update) toast(`NEOX ${r.update.version} is available — see Settings.`, 'info', 8000); }).catch(() => {});
 }
+
+// Shown on every launch: NEOX targets maximum performance, so the user must acknowledge the risk and be offered a backup.
+function backupWarning() {
+  return new Promise(resolve => {
+    const ok = h('input', { type: 'checkbox', id: 'ack' });
+    const go = h('button', { class: 'btn primary', disabled: true }, 'Continue');
+    ok.onchange = () => { go.disabled = !ok.checked; };
+    const rp = h('button', { class: 'btn' }, 'Create restore point now');
+    rp.onclick = () => busy(rp, async () => { rp.textContent = 'Creating…'; try { const r = await call('action_run', { id: 'restore_point' }); toast(r.message, r.success ? 'ok' : 'err'); } catch (e) { toast(String(e), 'err'); } });
+    const bg = h('div', { class: 'modal-bg' }, h('div', { class: 'modal' },
+      h('h3', {}, 'Back up your system first'),
+      h('div', { class: 'body-text' }, 'NEOX is built for maximum performance. Many of its optimizations change deep Windows settings, and some of them lower security protections on purpose.\n\nBefore you apply anything, make a full backup of your system (a disk image or at least a restore point). NEOX and its author are not responsible for any damage, data loss or instability.\n\nEvery change NEOX makes is saved so it can be reverted from History — but a backup is the only real safety net.'),
+      h('label', { class: 'row', style: { margin: '14px 0', cursor: 'pointer' } }, ok, h('span', {}, 'I understand and I use NEOX at my own risk.')),
+      h('div', { class: 'actions' }, rp, go)));
+    go.onclick = () => { bg.remove(); resolve(); };
+    document.getElementById('modal-root').append(bg);
+  });
+}
+
 boot();

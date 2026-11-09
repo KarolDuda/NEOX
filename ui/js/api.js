@@ -56,7 +56,7 @@ async function mock(cmd, a) {
       { name: 'Memory bandwidth', unit: 'MB/s', before: 18000, after: 19800, percent: 10, verdict: 'better', higherIsBetter: true },
       { name: 'Timer p99', unit: 'ms', before: 1.9, after: 1.4, percent: -26, verdict: 'better', higherIsBetter: false }] };
     case 'autotune_undo': return 6;
-    case 'profiles_list': return [{ id: 'safe', name: 'Safe', description: 'Only low-risk, reversible tweaks.', builtIn: true, tweakIds: ['tw_1', 'tw_2'] }, { id: 'esports', name: 'Esports', description: 'Latency first.', builtIn: true, tweakIds: ['tw_1', 'tw_3', 'tw_5'] }];
+    case 'profiles_list': return [{ id: 'builtin.safe', name: 'Safe', description: 'Only low-risk, reversible tweaks.', builtIn: true, tweakIds: ['tw_1', 'tw_2'] }, { id: 'builtin.max', name: 'Maximum performance', description: 'Everything that raises performance, incl. high-risk items.', builtIn: true, tweakIds: ['tw_1', 'tw_3', 'tw_5'] }];
     case 'profile_apply': emitMock('progress', 'Applying profile…'); await sleep(500); return { applied: 2, skipped: 0, failed: 0, restart: 'none', lines: ['Disable Game DVR: ok'] };
     case 'history_list': return [{ id: '1', time: new Date().toISOString(), tweakId: 'mouse_accel', title: 'Disable mouse acceleration', action: 'apply', success: true, message: 'Applied and verified.' }];
     case 'baselines_list': return [];
