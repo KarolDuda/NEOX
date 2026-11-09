@@ -122,7 +122,6 @@ pub use win::WinRegistry;
 #[cfg(windows)]
 mod win {
     use super::*;
-    use std::borrow::Cow;
     use winreg::enums::*;
     use winreg::{RegKey, RegValue};
 
@@ -151,7 +150,7 @@ mod win {
         }
     }
 
-    fn encode(d: &RegData) -> RegValue<'static> {
+    fn encode(d: &RegData) -> RegValue {
         let (bytes, vtype) = match d {
             RegData::Dword(v) => (v.to_le_bytes().to_vec(), REG_DWORD),
             RegData::Qword(v) => (v.to_le_bytes().to_vec(), REG_QWORD),
@@ -164,7 +163,7 @@ mod win {
             }
             RegData::Binary(b) => (b.clone(), REG_BINARY),
         };
-        RegValue { bytes: Cow::Owned(bytes), vtype }
+        RegValue { bytes, vtype }
     }
 
     impl RegistryApi for WinRegistry {
