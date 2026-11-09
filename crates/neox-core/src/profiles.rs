@@ -171,8 +171,12 @@ mod tests {
             assert!(!p.tweak_ids.is_empty(), "{}", p.name);
             for id in &p.tweak_ids {
                 let t = c.find(id).unwrap();
-                assert!(!matches!(t.risk, RiskLevel::Experimental | RiskLevel::HighRisk), "{id}");
-                assert!(!matches!(t.kind, TweakKind::Service | TweakKind::Task | TweakKind::Bcd), "{id}");
+                // "Maximum performance" is the one deliberate exception: it includes high-risk and boot items.
+                if p.id != "builtin.max" {
+                    assert!(!matches!(t.risk, RiskLevel::Experimental | RiskLevel::HighRisk), "{id}");
+                    assert!(!matches!(t.kind, TweakKind::Bcd), "{id}");
+                }
+                assert!(!matches!(t.kind, TweakKind::Service | TweakKind::Task), "{id}");
             }
         }
     }
