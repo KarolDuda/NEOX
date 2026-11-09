@@ -39,8 +39,16 @@ pub fn epic_manifests_dir() -> std::path::PathBuf {
     base.join("Epic").join("EpicGamesLauncher").join("Data").join("Manifests")
 }
 
+/// Lowercase file name without extension; accepts both `\\` and `/` separators regardless of the host OS.
+pub fn exe_stem(path: &str) -> String {
+    let p = path.trim().trim_matches('"');
+    let file = p.rsplit(['\\', '/']).next().unwrap_or("");
+    let stem = match file.rfind('.') { Some(i) if i > 0 => &file[..i], _ => file };
+    stem.to_lowercase()
+}
+
 pub fn is_running(run: &dyn Runner, exe_path_or_name: &str) -> bool {
-    let stem = Path::new(exe_path_or_name.trim().trim_matches('"')).file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
+    let stem = exe_stem(exe_path_or_name);
     !stem.is_empty() && processes(run).iter().any(|p| p.name.to_lowercase() == stem)
 }
 
@@ -112,7 +120,7 @@ impl GameBoost {
 
     fn watched(&self) -> Vec<String> {
         let mut v: Vec<String> = self.store.read(|s| s.games.iter().map(|g| g.exe_path.clone()).chain(s.settings.game_exe_path.clone()).collect());
-        v = v.into_iter().filter_map(|p| Path::new(p.trim().trim_matches('"')).file_stem().map(|s| s.to_string_lossy().to_lowercase())).filter(|s| !s.is_empty()).collect();
+        v = v.into_iter().map(|p| exe_stem(&p)).filter(|s| !s.is_empty()).collect();
         v.sort();
         v.dedup();
         v
