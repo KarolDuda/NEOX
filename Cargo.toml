@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/neox-core"]
+members = ["crates/neox-core", "crates/neox-sys"]
 
 [workspace.package]
 version = "3.1.0"
