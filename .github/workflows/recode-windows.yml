@@ -6,12 +6,16 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   windows:
     runs-on: windows-latest
     env:
       NEOX_VERSION: 3.1.${{ github.run_number }}
+      # License server URL (repository secret). Baked into the exe at build time; never stored in the repo.
+      NEOX_ACTIVATION_URL: ${{ secrets.NEOX_ACTIVATION_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -38,6 +42,25 @@ jobs:
         shell: pwsh
         run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=3.1.${{ github.run_number }} installer\neox.iss'
 
+      - name: Checksum and build provenance
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash installer\output\Neox_Setup.exe -Algorithm SHA256).Hash
+          $e = (Get-FileHash publish\Neox.exe -Algorithm SHA256).Hash
+          @"
+          Preview of the Rust + Tauri rewrite. Download Neox_Setup.exe and run it.
+
+          The installer is not code-signed, so SmartScreen / Smart App Control may warn you. It is built by GitHub Actions from this repository's source; verify it with ``gh attestation verify Neox_Setup.exe --repo KarolDuda/NEOX``.
+
+          SHA-256 Neox_Setup.exe: ``$h``
+          SHA-256 Neox.exe: ``$e``
+          "@ | Set-Content -Encoding utf8 release-notes.md
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: installer/output/Neox_Setup.exe
+
       - name: Publish as a pre-release
         uses: softprops/action-gh-release@v2
         with:
@@ -45,4 +68,4 @@ jobs:
           name: NEOX RECODE preview (build ${{ github.run_number }})
           prerelease: true
           files: installer/output/Neox_Setup.exe
-          body: Preview of the Rust + Tauri rewrite. Download Neox_Setup.exe and run it. The installer is not code-signed, so SmartScreen may warn you (More info, Run anyway).
+          body_path: release-notes.md

@@ -65,10 +65,33 @@ fn tctx(game_exe: Option<String>) -> TweakContext { TweakContext { game_exe_path
 
 impl Ctx {
     fn hwid(&self) -> &str { self.hwid.get_or_init(|| neox_sys::hwid::read(self.run.as_ref())) }
+    /// Offline signed key first, then a server-bound activation code. Never touches the network.
     fn license(&self) -> LicenseStatus {
-        match self.store.read(|s| s.license_key.clone()) {
-            None => LicenseStatus::Free,
-            Some(k) => license::verify(&k, self.hwid(), neox_core::timefmt::now_unix()),
+        let now = neox_core::timefmt::now_unix();
+        let mut last_bad = None;
+        if let Some(k) = self.store.read(|s| s.license_key.clone()) {
+            let st = license::verify(&k, self.hwid(), now);
+            if st.is_premium() { return st; }
+            last_bad = Some(st);
+        }
+        if let Some(a) = self.store.read(|s| s.activation.clone()) {
+            let st = neox_core::activation::status(&a, self.hwid(), now);
+            if st.is_premium() { return st; }
+            last_bad = Some(st);
+        }
+        last_bad.unwrap_or(LicenseStatus::Free)
+    }
+    /// Asks the license server again (at start and every few hours). A clear refusal removes the activation;
+    /// a network failure changes nothing, so offline use keeps working for the grace period.
+    fn recheck_activation(&self) {
+        use neox_core::activation::{needs_recheck, Reply};
+        let now = neox_core::timefmt::now_unix();
+        let Some(a) = self.store.read(|s| s.activation.clone()) else { return };
+        if !needs_recheck(&a, now) { return; }
+        match neox_sys::activation::verify(self.run.as_ref(), &a.code, self.hwid()) {
+            Reply::Ok { name, exp } => { self.store.write(|s| if let Some(x) = s.activation.as_mut() { x.verified_at = now; x.name = name; x.exp = exp; }); let _ = self.store.save(); }
+            Reply::Denied(_) => { self.store.write(|s| s.activation = None); let _ = self.store.save(); }
+            Reply::Unreachable => {}
         }
     }
     fn premium(&self) -> bool { self.license().is_premium() }
@@ -580,7 +603,7 @@ fn license_view(c: &Ctx) -> LicenseView {
 #[tauri::command]
 async fn license_info(c: S<'_>) -> Result<LicenseView, String> {
     let c = c.inner().clone();
-    blocking(move || license_view(&c)).await
+    blocking(move || { c.recheck_activation(); license_view(&c) }).await
 }
 
 /// Saves the key only when it is valid for this PC; otherwise reports why without touching the stored key.
@@ -588,7 +611,22 @@ async fn license_info(c: S<'_>) -> Result<LicenseView, String> {
 async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, String> {
     let c = c.inner().clone();
     blocking(move || {
-        let st = license::verify(&token, c.hwid(), neox_core::timefmt::now_unix());
+        let now = neox_core::timefmt::now_unix();
+        // Activation code: the server binds it to this PC's hardware id on first use.
+        if let Some(code) = neox_core::activation::normalize_code(&token) {
+            if neox_sys::activation::server_url().is_none() { return LicenseStatus::Invalid { reason: "Activation codes are not available in this build. Use a license key.".into() }; }
+            return match neox_sys::activation::verify(c.run.as_ref(), &code, c.hwid()) {
+                neox_core::activation::Reply::Ok { name, exp } => {
+                    let a = neox_core::activation::Activation { code, hwid: c.hwid().to_string(), name, exp, verified_at: now };
+                    let st = neox_core::activation::status(&a, c.hwid(), now);
+                    c.store.write(|s| s.activation = Some(a)); let _ = c.store.save();
+                    st
+                }
+                neox_core::activation::Reply::Denied(r) => LicenseStatus::Invalid { reason: r },
+                neox_core::activation::Reply::Unreachable => LicenseStatus::Invalid { reason: "Could not reach the license server. Check your internet connection and try again.".into() },
+            };
+        }
+        let st = license::verify(&token, c.hwid(), now);
         if st.is_premium() { c.store.write(|s| s.license_key = Some(token.trim().to_string())); let _ = c.store.save(); }
         st
     }).await
@@ -597,7 +635,7 @@ async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, Stri
 #[tauri::command]
 async fn license_remove(c: S<'_>) -> Result<(), String> {
     let c = c.inner().clone();
-    blocking(move || { c.store.write(|s| s.license_key = None); let _ = c.store.save(); }).await
+    blocking(move || { c.store.write(|s| { s.license_key = None; s.activation = None; }); let _ = c.store.save(); }).await
 }
 
 /// Opens the purchase invite. Only the fixed URL is ever opened; the UI cannot pass one.

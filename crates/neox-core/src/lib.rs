@@ -4,6 +4,7 @@ pub mod autotune;
 pub mod catalog;
 pub mod engine;
 pub mod health;
+pub mod activation;
 pub mod license;
 pub mod models;
 pub mod nettune;

@@ -2,6 +2,7 @@
 //! (`Runner`, `RegistryApi`, `Adapters`), so the handler logic is unit-tested on any OS with in-memory fakes.
 
 pub mod actions;
+pub mod activation;
 pub mod adapters;
 pub mod cleaner;
 pub mod games;

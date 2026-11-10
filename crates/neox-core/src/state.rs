@@ -92,6 +92,8 @@ pub struct AppState {
     pub last_autotune_ids: Vec<String>,
     /// Premium license key (`NEOX1.…`), checked against this PC on every start.
     pub license_key: Option<String>,
+    /// Activation bound to this PC by the license server.
+    pub activation: Option<crate::activation::Activation>,
     /// Ids applied by the last Internet Auto-Tune run.
     pub last_nettune_ids: Vec<String>,
     pub settings: AppSettings,
@@ -99,7 +101,7 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { schema_version: 1, snapshots: HashMap::new(), history: Vec::new(), custom_profiles: Vec::new(), games: Vec::new(),
-               baselines: Vec::new(), pending_restart: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
+               baselines: Vec::new(), pending_restart: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, activation: None, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
     }
 }
 

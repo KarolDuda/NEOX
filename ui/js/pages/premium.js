@@ -30,30 +30,14 @@ export default async function premium({ go }) {
       : 'Free gives you 20 safe optimizations. Premium adds every optimization, Auto-Tune, Internet Auto-Tune for Wi-Fi and Ethernet, profiles and game tools.'),
     lic.premium ? null : h('div', { class: 'row wrap', style: { marginTop: '16px' } }, buy, h('span', { class: 'small muted' }, 'Opens our Discord. Open a ticket in the Purchase channel.')));
 
-  const hw = h('div', { class: 'hwid' }, lic.hwid || '…');
-  const copy = h('button', { class: 'btn sm', onclick: async () => { try { await navigator.clipboard.writeText(lic.hwid); toast('Hardware ID copied.', 'ok'); } catch { toast('Select the ID and copy it manually.', 'info'); } } }, 'Copy');
-  const key = h('textarea', { class: 'key', placeholder: 'Paste your license key here (starts with NEOX1.)' });
-  const act = h('button', { class: 'btn gold' }, 'Activate');
-  act.onclick = () => busy(act, async () => {
-    const r = await call('license_activate', { token: key.value.trim() });
-    if (r.state === 'active') { toast('Premium activated. Thank you!', 'ok'); S.nav.updateNav && S.nav.updateNav(); go('premium'); }
-    else toast(r.reason || 'That key could not be activated.', 'err', 7000);
-  });
-
-  const activate = h('div', { class: 'card col', style: { gap: '12px' } },
-    h('div', { class: 'h2' }, lic.premium ? 'License' : 'Activate'),
-    h('div', { class: 'small muted' }, 'Your hardware ID identifies this PC (from the motherboard, not your IP address). A license works on one PC only.'),
-    h('div', { class: 'row' }, hw, copy),
-    lic.premium ? h('div', { class: 'row' }, h('span', { class: 'grow muted' }, `License ${st.id}`),
-        h('button', { class: 'btn sm danger', onclick: async () => { await call('license_remove'); toast('License removed from this PC.', 'info'); go('premium'); } }, 'Remove from this PC'))
-      : [key, h('div', { class: 'row' }, act)]);
+  const activate = activateCard(lic, go);
 
   const how = lic.premium ? null : h('div', { class: 'card' }, h('div', { class: 'h2' }, 'How to get Premium'),
     h('ol', { class: 'steps', style: { padding: 0, margin: '12px 0 0' } },
       h('li', {}, h('span', {}, 'Press “Buy Premium version” and join our Discord.')),
-      h('li', {}, h('span', {}, 'Open a ticket in the Purchase channel and send your hardware ID (shown below).')),
-      h('li', {}, h('span', {}, 'After payment you get a license key made for your PC.')),
-      h('li', {}, h('span', {}, 'Paste it here and press Activate. Moving to a new PC? Open a ticket in Help.'))));
+      h('li', {}, h('span', {}, 'Open a ticket in the Purchase channel and pay. You get an activation code.')),
+      h('li', {}, h('span', {}, 'Open Settings (or this page), paste the code and press Activate.')),
+      h('li', {}, h('span', {}, 'NEOX reads your PC\'s hardware ID and binds the code to it. Moving to a new PC? Open a ticket in Help.'))));
 
   const feats = h('div', { class: 'prem-grid' }, FEATURES.map(([t, d]) => h('div', { class: 'prem-feat' }, h('b', {}, t), h('span', { class: 'small muted' }, d))));
   const table = h('div', { class: 'card' }, h('table', { class: 'cmp' },
@@ -61,3 +45,27 @@ export default async function premium({ go }) {
     h('tbody', {}, ROWS.map(r => h('tr', {}, h('td', {}, r[0]), h('td', { class: r[1] === '—' ? 'n' : '' }, r[1]), h('td', { class: 'y' }, r[2]))))));
   return page('Premium', null, hero, how, activate, feats, table);
 }
+
+// Shared by the Premium page and Settings: shows the hardware id and takes an activation code or license key.
+export function activateCard(lic, go) {
+  const st = lic.status;
+  const hw = h('div', { class: 'hwid' }, lic.hwid || '…');
+  const copy = h('button', { class: 'btn sm', onclick: async () => { try { await navigator.clipboard.writeText(lic.hwid); toast('Hardware ID copied.', 'ok'); } catch { toast('Select the ID and copy it manually.', 'info'); } } }, 'Copy');
+  const key = h('textarea', { class: 'key', placeholder: 'Activation code (NEOX-XXXX-XXXX-XXXX) or license key' });
+  const act = h('button', { class: 'btn gold' }, 'Activate');
+  act.onclick = () => busy(act, async () => {
+    const r = await call('license_activate', { token: key.value.trim() });
+    if (r.state === 'active') { toast('Premium activated. Thank you!', 'ok'); S.nav.updateNav && S.nav.updateNav(); go(S.cur || 'premium'); }
+    else toast(r.reason || 'That key could not be activated.', 'err', 7000);
+  });
+
+  return h('div', { class: 'card col', style: { gap: '12px' } },
+    h('div', { class: 'h2' }, lic.premium ? 'License' : 'Activation code'),
+    h('div', { class: 'small muted' }, 'NEOX reads your hardware ID (from the motherboard, not your IP address) and the code is bound to it on first use. One code works on one PC.'),
+    h('div', { class: 'row' }, hw, copy),
+    lic.premium ? h('div', { class: 'row' }, h('span', { class: 'grow muted' }, `License ${st.id}`),
+        h('button', { class: 'btn sm danger', onclick: async () => { await call('license_remove'); toast('License removed from this PC.', 'info'); go('premium'); } }, 'Remove from this PC'))
+      : [key, h('div', { class: 'row' }, act)]);
+}
+
+

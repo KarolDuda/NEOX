@@ -24,7 +24,7 @@ let current = null, token = 0;
 
 export async function go(id) {
   if (!loaders[id]) id = 'dashboard';
-  const my = ++token; current = id;
+  const my = ++token; current = id; S.cur = id;
   document.querySelectorAll('.nav-item').forEach((b, i) => { const on = b.dataset.id === id; b.classList.toggle('active', on); if (on) { const ind = document.getElementById('nav-ind'); ind.style.opacity = 1; ind.style.transform = `translateY(${b.offsetTop}px)`; } });
   const content = document.getElementById('content');
   try {
