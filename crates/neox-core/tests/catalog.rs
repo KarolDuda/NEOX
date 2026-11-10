@@ -4,9 +4,9 @@ use neox_core::models::*;
 fn cat() -> Catalog { Catalog::load_embedded().expect("catalog loads") }
 
 #[test]
-fn loads_all_260_items_with_unique_ids() {
+fn loads_all_262_items_with_unique_ids() {
     let c = cat();
-    assert_eq!(c.len(), 260);
+    assert_eq!(c.len(), 262);
 }
 
 #[test]

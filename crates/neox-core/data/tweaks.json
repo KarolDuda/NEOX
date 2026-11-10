@@ -5543,6 +5543,48 @@
           ]
         ]
       }
+    },
+    {
+      "id": "kernel_shadow_stacks_off",
+      "category": "performance",
+      "title": "Turn off Kernel-mode Hardware-enforced Stack Protection",
+      "description": "Disables the CET shadow-stack protection of the Windows kernel (Windows 11 22H2+, CPUs with CET). Removes a small per-call cost in the kernel and in drivers.",
+      "consequences": "Lowers protection against return-oriented attacks in kernel code. Needs a restart; ignored on PCs without CET support. Reversible.",
+      "kind": "reg",
+      "risk": "highRisk",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\KernelShadowStacks",
+          "name": "Enabled",
+          "type": "dword",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "timer_coalesce_off",
+      "category": "performance",
+      "title": "Turn off timer coalescing",
+      "description": "Stops Windows from batching timer wake-ups to save power. Timers fire on time instead of up to a few ms late, which can smooth frame pacing on some systems.",
+      "consequences": "Slightly higher idle power use. Reversible; needs a restart.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power",
+          "name": "CoalescingTimerInterval",
+          "type": "dword",
+          "value": 0
+        }
+      ]
     }
   ]
 }

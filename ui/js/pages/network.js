@@ -7,8 +7,12 @@ export default async function network({ go }) {
   const P = S.lic.premium;
   const pings = h('div', { class: 'stack' }), dns = h('div', { class: 'stack' }), info = h('div', { class: 'card' }, h('div', { class: 'muted' }, 'Loading…'));
   const status = h('div', { class: 'small muted mono' });
+  const PRESETS = [['Cloudflare', '1.1.1.1', '1.0.0.1'], ['Google', '8.8.8.8', '8.8.4.4'], ['Quad9', '9.9.9.9', '149.112.112.112'], ['AdGuard', '94.140.14.14', '94.140.15.15']];
+  const setDns = (name, a, b) => async () => { if (!(await confirmBox('Set DNS to ' + name + '?', 'Applied to your active network adapters. Your current DNS is saved and can be restored with "Restore my DNS".', 'Apply'))) return; const r = await call('net_dns_set', { servers: [a, b] }); toast(r.message, r.success ? 'ok' : 'err'); };
+  const dnsCard = h('div', { class: 'card col', style: { gap: '10px' } }, h('div', { class: 'h2' }, 'Set DNS'), h('div', { class: 'small muted' }, 'Free. Pick a provider in one click, or run the benchmark below to find the fastest for you.'),
+    h('div', { class: 'row wrap' }, PRESETS.map(([n, a, b]) => h('button', { class: 'btn', onclick: setDns(n, a, b) }, n)), h('button', { class: 'btn', onclick: async () => { const r = await call('net_dns_restore'); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Automatic (restore mine)')));
   const tune = h('div', { class: 'stack' });
-  const wrap = page('Network', 'Measure first, change second: latency to common servers, DNS speed, and a path MTU probe.', info, internetTune(tune, go, P),
+  const wrap = page('Network', 'Measure first, change second: latency to common servers, DNS speed, and a path MTU probe.', info, dnsCard, internetTune(tune, go, P),
     h('div', { class: 'row' }, h('h3', { class: 'h2 grow' }, 'Latency'), runBtn('Run ping test', 'net_ping_all', pings)), pings,
     h('div', { class: 'row' }, h('h3', { class: 'h2 grow' }, 'DNS benchmark'), runBtn('Run DNS benchmark', 'net_dns_bench', dns),
       h('button', { class: 'btn', onclick: async () => { const r = await call('net_dns_restore'); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Restore my DNS')), dns, status);
@@ -20,7 +24,7 @@ export default async function network({ go }) {
   const dnsRows = [];
   await on('dns-row', r => { if (!document.body.contains(dns)) return; dnsRows.push(r); dnsRows.sort((a, b) => (a.medianMs ?? 1e9) - (b.medianMs ?? 1e9));
     dns.replaceChildren(...dnsRows.map((x, i) => h('div', { class: 'delta' }, h('b', { class: 'grow' }, (i === 0 ? '★ ' : '') + x.name), h('span', { class: 'mono muted' }, x.primary + ' / ' + x.secondary), h('span', {}, x.medianMs == null ? 'failed' : x.medianMs.toFixed(1) + ' ms'),
-      P ? h('button', { class: 'btn sm', onclick: async () => { if (!(await confirmBox('Set DNS to ' + x.name + '?', 'Applied to active adapters. Your current DNS is saved and can be restored with "Restore my DNS".', 'Apply'))) return; const r = await call('net_dns_set', { servers: [x.primary, x.secondary] }); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Use') : lockButton(go)))); });
+      h('button', { class: 'btn sm', onclick: async () => { if (!(await confirmBox('Set DNS to ' + x.name + '?', 'Applied to active adapters. Your current DNS is saved and can be restored with "Restore my DNS".', 'Apply'))) return; const r = await call('net_dns_set', { servers: [x.primary, x.secondary] }); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Use')))); });
 
   Promise.all([call('net_adapters'), call('net_mtu')]).then(([ad, mtu]) => info.replaceChildren(h('div', { class: 'eyebrow' }, 'Active adapters'),
     ...ad.map(a => h('div', { class: 'row', style: { marginTop: '8px' } }, h('b', { class: 'grow' }, a.name + ' · ' + a.description), h('span', { class: 'muted small' }, `${a.speedMbps} Mbps · DNS ${a.dns.join(', ') || 'auto'}`))),

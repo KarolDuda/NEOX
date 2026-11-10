@@ -3,17 +3,19 @@ import { h, page, toast, busy, fmtTime } from '../ui.js';
 import { S, refreshLicense } from '../state.js';
 
 const FEATURES = [
-  ['All 260 optimizations', 'The free plan has 20. Premium unlocks every performance, input, network and cleanup item, including the high-impact ones.'],
+  ['All 262 optimizations', 'The free plan has 40. Premium unlocks every performance, input, network and cleanup item, including the high-impact ones.'],
   ['Auto-Tune', 'Scans your hardware, applies the right set, and measures before and after.'],
   ['Internet Auto-Tune', 'Detects Ethernet and Wi-Fi and applies the network items that fit each, then measures latency, jitter and loss.'],
   ['Profiles', 'Maximum performance, Esports, Network boost, Streaming and Laptop. Plus your own profiles with import and export.'],
   ['Game Boost', 'Switches to a performance power plan only while your game runs, then restores your plan.'],
-  ['Game tools', 'Fortnite low-latency config, DNS switcher, and baseline snapshots with before/after comparison.'],
+  ['Memory Cleaner', 'One click empties idle working sets and the standby list, handing a big block of RAM back before a game or heavy task.'],
+  ['Performance Score', 'Measures CPU, memory and timer jitter and keeps the history, so you see what every change really did.'],
+  ['Game tools', 'Fortnite low-latency config and baseline snapshots with before/after comparison.'],
 ];
 const ROWS = [
-  ['Optimizations', '20', 'All 260'], ['Auto-Tune', '—', '✔'], ['Internet Auto-Tune (Wi-Fi + Ethernet)', '—', '✔'],
-  ['Profiles (load, create, import, export)', '—', '✔'], ['Game Boost', '—', '✔'], ['Fortnite optimizer', '—', '✔'], ['DNS switcher', '—', '✔'],
-  ['Baselines & comparison', '—', '✔'], ['Undo / revert everything', '✔', '✔'], ['Restore point, history, disk analyzer', '✔', '✔'],
+  ['Optimizations', '40', 'All 262'], ['Memory Cleaner', '—', '✔'], ['Performance Score history', '—', '✔'], ['Auto-Tune', '—', '✔'], ['Internet Auto-Tune (Wi-Fi + Ethernet)', '—', '✔'],
+  ['Profiles (load, create, import, export)', '—', '✔'], ['Game Boost', '—', '✔'], ['Fortnite optimizer', '—', '✔'],
+  ['Baselines & comparison', '—', '✔'], ['DNS switcher', '✔', '✔'], ['Undo / revert everything', '✔', '✔'], ['Restore point, history, disk analyzer', '✔', '✔'],
 ];
 
 export default async function premium({ go }) {
@@ -27,7 +29,7 @@ export default async function premium({ go }) {
     h('h1', {}, lic.premium ? 'Premium is active' : 'Everything NEOX can do. Unlocked.'),
     h('p', { class: 'muted', style: { maxWidth: '640px' } }, lic.premium
       ? `Licensed to ${st.name}. Bound to this PC.` + (st.exp ? ` Valid until ${fmtTime(st.exp * 1000)}.` : ' Lifetime license.')
-      : 'Free gives you 20 safe optimizations. Premium adds every optimization, Auto-Tune, Internet Auto-Tune for Wi-Fi and Ethernet, profiles and game tools.'),
+      : 'Free gives you 40 safe optimizations and the DNS switcher. Premium adds every optimization, Auto-Tune, Internet Auto-Tune, Memory Cleaner, Performance Score, profiles and game tools.'),
     lic.premium ? null : h('div', { class: 'row wrap', style: { marginTop: '16px' } }, buy, h('span', { class: 'small muted' }, 'Opens our Discord. Open a ticket in the Purchase channel.')));
 
   const activate = activateCard(lic, go);

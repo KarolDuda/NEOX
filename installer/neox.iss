@@ -29,8 +29,9 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=output
 OutputBaseFilename=Neox_Setup
-Compression=lzma2
-SolidCompression=yes
+; Stored without compression on purpose: a small, plain payload looks less like a packer to ML scanners than a high-entropy LZMA blob.
+Compression=none
+SolidCompression=no
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExe}
 CloseApplications=yes

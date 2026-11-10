@@ -12,6 +12,11 @@ use std::sync::{Mutex, MutexGuard};
 #[serde(rename_all = "camelCase")]
 pub enum HistoryAction { Apply, Revert, Run, ProfileApply }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ScoreEntry { pub time: i64, pub label: String, pub cpu_ops_per_sec: f64, pub memory_mbps: f64, pub timer_avg_ms: f64, pub timer_p99_ms: f64 }
+impl Default for ScoreEntry { fn default() -> Self { ScoreEntry { time: 0, label: String::new(), cpu_ops_per_sec: 0.0, memory_mbps: 0.0, timer_avg_ms: 0.0, timer_p99_ms: 0.0 } } }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct HistoryEntry {
@@ -86,6 +91,10 @@ pub struct AppState {
     pub games: Vec<GameProfile>,
     pub baselines: Vec<Baseline>,
     pub pending_restart: Vec<String>,
+    /// Unix seconds when the oldest pending item was added; cleared items are dropped after a real reboot.
+    pub pending_restart_at: i64,
+    /// Performance Score runs (newest last).
+    pub score_history: Vec<ScoreEntry>,
     /// DNS backups: adapter GUID -> manual servers (empty list = DHCP).
     pub dns_backups: HashMap<String, Vec<String>>,
     /// Ids applied by the last Auto-Tune run (so it can be undone in one click).
@@ -101,7 +110,7 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { schema_version: 1, snapshots: HashMap::new(), history: Vec::new(), custom_profiles: Vec::new(), games: Vec::new(),
-               baselines: Vec::new(), pending_restart: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, activation: None, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
+               baselines: Vec::new(), pending_restart: Vec::new(), pending_restart_at: 0, score_history: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, activation: None, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
     }
 }
 

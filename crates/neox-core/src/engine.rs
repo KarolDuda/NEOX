@@ -107,7 +107,8 @@ impl Engine {
         }
 
         if t.restart != RestartRequirement::None {
-            self.store.write(|s| if !s.pending_restart.contains(&t.id) { s.pending_restart.push(t.id.clone()); });
+            let now = crate::timefmt::now_unix();
+            self.store.write(|s| if !s.pending_restart.contains(&t.id) { if s.pending_restart.is_empty() { s.pending_restart_at = now; } s.pending_restart.push(t.id.clone()); });
         }
         self.record(t, HistoryAction::Apply, true, "Applied");
         TweakResult::ok("Applied.", t.restart)
@@ -150,8 +151,15 @@ impl Engine {
         }
     }
 
+    /// Drops the pending-restart list when Windows has been rebooted since the first item was added.
+    /// `boot_unix` is when the current Windows session started. Returns true when something was cleared.
+    pub fn clear_pending_if_rebooted(&self, boot_unix: i64) -> bool {
+        let cleared = self.store.read(|s| !s.pending_restart.is_empty() && s.pending_restart_at < boot_unix);
+        if cleared { self.store.write(|s| { s.pending_restart.clear(); s.pending_restart_at = 0; }); }
+        cleared
+    }
     pub fn clear_pending_restart(&self) {
-        self.store.write(|s| s.pending_restart.clear());
+        self.store.write(|s| { s.pending_restart.clear(); s.pending_restart_at = 0; });
         let _ = self.store.save();
     }
 
@@ -278,6 +286,18 @@ mod tests {
         assert!(e.apply(&id, &ctx()).success);
         assert!(store.read(|s| s.pending_restart.contains(&id)));
         assert!(e.revert(&id, &ctx()).success);
+        assert!(store.read(|s| s.pending_restart.is_empty()));
+    }
+
+    #[test]
+    fn pending_restart_list_is_cleared_after_a_real_reboot_only() {
+        let (e, store, _) = engine(true, Fake::new());
+        let id = e.catalog().all().iter().find(|t| t.kind == TweakKind::Reg && !t.requires_admin && t.restart != RestartRequirement::None).unwrap().id.clone();
+        assert!(e.apply(&id, &ctx()).success);
+        let at = store.read(|s| s.pending_restart_at);
+        assert!(at > 0 && !store.read(|s| s.pending_restart.is_empty()));
+        assert!(!e.clear_pending_if_rebooted(at - 10), "booted before the change: still pending");
+        assert!(e.clear_pending_if_rebooted(at + 10), "booted after the change: cleared");
         assert!(store.read(|s| s.pending_restart.is_empty()));
     }
 }

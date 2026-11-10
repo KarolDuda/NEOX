@@ -133,11 +133,16 @@ struct AppInfo { version: String, elevated: bool, first_run_done: bool, settings
 #[tauri::command]
 async fn app_info(c: S<'_>) -> Result<AppInfo, String> {
     let c = c.inner().clone();
-    blocking(move || AppInfo {
+    blocking(move || {
+        // A restart that already happened must not keep nagging: drop the list when Windows booted after the change.
+        let now = neox_core::timefmt::now_unix();
+        let boot = neox_sys::memory::boot_unix(now);
+        if boot > 0 { if c.engine.clear_pending_if_rebooted(boot) { let _ = c.store.save(); } }
+        AppInfo {
         version: update::current_version().to_string(), elevated: c.engine.is_elevated(),
         first_run_done: c.store.read(|s| s.settings.first_run_done), settings: c.store.read(|s| s.settings.clone()),
         pending_restart: c.store.read(|s| s.pending_restart.clone()), applied_count: c.store.read(|s| s.snapshots.len()),
-    }).await
+    } }).await
 }
 
 #[tauri::command]
@@ -477,7 +482,7 @@ async fn net_dns_bench(app: tauri::AppHandle) -> Result<Vec<DnsBenchResult>, Str
 #[tauri::command]
 async fn net_dns_set(c: S<'_>, servers: Vec<String>) -> Result<TweakResult, String> {
     let c = c.inner().clone();
-    blocking(move || { c.need("DNS switcher")?; Ok(network::set_dns(c.run.as_ref(), c.adapters.as_ref(), c.reg.as_ref() as &dyn RegistryApi, &c.store, &servers)) }).await?
+    blocking(move || { Ok(network::set_dns(c.run.as_ref(), c.adapters.as_ref(), c.reg.as_ref() as &dyn RegistryApi, &c.store, &servers)) }).await?
 }
 
 #[tauri::command]
@@ -716,6 +721,65 @@ async fn nettune_undo(c: S<'_>) -> Result<usize, String> {
     }).await
 }
 
+// ------------------------------------------------------------------ restart, Memory Cleaner, Performance Score
+
+/// Restarts Windows after a short delay so the user can still cancel with `shutdown /a`.
+#[tauri::command]
+async fn restart_windows(c: S<'_>) -> Result<bool, String> {
+    let c = c.inner().clone();
+    blocking(move || c.run.run(&neox_sys::runner::argv(&["shutdown", "/r", "/t", "10", "/c", "NEOX: restarting to apply your changes. Run shutdown /a to cancel."]), 15).code == 0).await
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoryCleanReport { before_free: u64, after_free: u64, freed: u64, total: u64 }
+
+#[tauri::command]
+async fn memory_clean(c: S<'_>) -> Result<MemoryCleanReport, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        c.need("Memory Cleaner")?;
+        if !c.engine.is_elevated() { return Err("Memory Cleaner needs administrator rights. Restart NEOX as administrator.".to_string()); }
+        let (total, before, _) = neox_sys::sysinfo::memory();
+        neox_sys::memory::clean()?;
+        std::thread::sleep(Duration::from_millis(600));
+        let (_, after, _) = neox_sys::sysinfo::memory();
+        Ok(MemoryCleanReport { before_free: before, after_free: after, freed: after.saturating_sub(before), total })
+    }).await?
+}
+
+#[tauri::command]
+async fn score_list(c: S<'_>) -> Result<Vec<neox_core::state::ScoreEntry>, String> {
+    let c = c.inner().clone();
+    blocking(move || c.store.read(|s| s.score_history.clone())).await
+}
+
+/// Runs the built-in benchmark and stores the result so the user can see the trend after each change.
+#[tauri::command]
+async fn score_run(c: S<'_>, app: tauri::AppHandle, label: String) -> Result<Vec<neox_core::state::ScoreEntry>, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        c.need("Performance Score")?;
+        let say = |m: &str| { let _ = app.emit("progress", m); };
+        let never = || false;
+        let Some(b) = neox_sys::bench::run(&say, &never) else { return Err("The measurement was cancelled.".to_string()) };
+        let label: String = label.trim().chars().take(40).collect();
+        c.store.write(|s| {
+            s.score_history.push(neox_core::state::ScoreEntry { time: neox_core::timefmt::now_unix(), label: if label.is_empty() { "Measurement".into() } else { label },
+                cpu_ops_per_sec: b.cpu_ops_per_sec, memory_mbps: b.memory_mbps, timer_avg_ms: b.timer_avg_ms, timer_p99_ms: b.timer_p99_ms });
+            let n = s.score_history.len(); if n > 50 { s.score_history.drain(0..n - 50); }
+        });
+        let _ = c.store.save();
+        Ok(c.store.read(|s| s.score_history.clone()))
+    }).await?
+}
+
+#[tauri::command]
+async fn score_clear(c: S<'_>) -> Result<(), String> {
+    let c = c.inner().clone();
+    blocking(move || { c.store.write(|s| s.score_history.clear()); let _ = c.store.save(); }).await
+}
+
 // ------------------------------------------------------------------ bootstrap
 
 pub fn run() {
@@ -776,6 +840,7 @@ pub fn run() {
             games_list, games_epic, game_add, game_remove, gameboost_get, gameboost_set, fortnite_info, fortnite_apply, fortnite_restore,
             update_check, update_install,
             license_info, license_activate, license_remove, open_buy, nettune_plan, nettune_run, nettune_undo,
+            restart_windows, memory_clean, score_list, score_run, score_clear,
         ])
         .run(tauri::generate_context!())
         .expect("error while running NEOX");

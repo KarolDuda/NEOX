@@ -21,7 +21,7 @@ pub trait Runner: Send + Sync {
 pub fn argv(parts: &[&str]) -> Vec<String> { parts.iter().map(|s| s.to_string()).collect() }
 
 pub fn powershell(script: &str) -> Vec<String> {
-    argv(&["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script])
+    argv(&["powershell", "-NoProfile", "-NonInteractive", "-Command", script])
 }
 
 pub struct ProcRunner;

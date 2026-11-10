@@ -7,7 +7,7 @@ export default async function optimizations({ go }) {
   const list = h('div', { class: 'stack' }, skeleton(6));
   const search = h('input', { type: 'search', placeholder: 'Search optimizations…', class: 'btn', style: { width: '280px', textAlign: 'left' } });
   const catBar = h('div', { class: 'row wrap' }), riskBar = h('div', { class: 'row wrap' });
-  const banner = S.lic.premium ? null : h('div', { class: 'plan-banner' }, h('span', { class: 'grow' }, h('b', {}, 'Free plan: '), `${S.lic.freeIds.length} optimizations are included. The rest are marked Premium.`), lockButton(go, 'Unlock all'));
+  const banner = S.lic.premium ? null : h('div', { class: 'plan-banner' }, h('span', { class: 'grow' }, h('b', {}, 'Free plan: '), `${S.lic.freeIds.length} optimizations and the DNS switcher are included. The rest are marked Premium.`), lockButton(go, 'Unlock all'));
   const wrap = page('Optimizations', 'Every change is verified after applying and can be reverted. Effects shown are the catalog author\'s claim, not a measurement.', banner, h('div', { class: 'row wrap' }, search), catBar, riskBar, list);
   const catalog = await getCatalog();
   let cat = 'all', risk = 'all', statuses = {};

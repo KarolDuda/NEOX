@@ -151,7 +151,8 @@ fn cpu_times() -> (u64, u64) {
 }
 
 #[cfg(windows)]
-fn memory() -> (u64, u64, i32) {
+/// (total bytes, available bytes, load percent)
+pub fn memory() -> (u64, u64, i32) {
     use ffi::*;
     let mut m = MemoryStatusEx { length: std::mem::size_of::<MemoryStatusEx>() as u32, memory_load: 0, total_phys: 0, avail_phys: 0,
         total_page: 0, avail_page: 0, total_virtual: 0, avail_virtual: 0, avail_ext_virtual: 0 };
@@ -163,7 +164,7 @@ fn memory() -> (u64, u64, i32) {
 #[cfg(not(windows))]
 fn cpu_times() -> (u64, u64) { (0, 0) }
 #[cfg(not(windows))]
-fn memory() -> (u64, u64, i32) { (0, 0, 0) }
+pub fn memory() -> (u64, u64, i32) { (0, 0, 0) }
 
 #[cfg(test)]
 mod tests {

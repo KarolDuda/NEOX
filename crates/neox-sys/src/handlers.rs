@@ -625,7 +625,7 @@ mod tests {
         let c = cat();
         let t = c.find("nic_im_off").unwrap();
         let run = Arc::new(Script::new());
-        run.on("powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command Get-NetAdapter", RunResult::ok(r#"{"N":"Eth","V":"1"}"#));
+        run.on("powershell -NoProfile -NonInteractive -Command Get-NetAdapter", RunResult::ok(r#"{"N":"Eth","V":"1"}"#));
         let h = NicHandler::new(run.clone());
         let snap = h.apply(t, &ctx()).unwrap();
         h.revert(t, &snap, &ctx()).unwrap();

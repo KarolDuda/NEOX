@@ -9,6 +9,7 @@ pub mod games;
 pub mod handlers;
 pub mod hwid;
 pub mod managers;
+pub mod memory;
 pub mod network;
 pub mod parse;
 pub mod registry;

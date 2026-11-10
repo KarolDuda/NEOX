@@ -49,11 +49,11 @@ img { -webkit-user-drag: none; }
 @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .version { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .14em; margin: 2px 0 14px; }
 .nav { position: relative; flex: 1; display: flex; flex-direction: column; gap: 3px; overflow-y: auto; }
-.nav-ind { position: absolute; left: 0; top: 0; width: 100%; height: 44px; border-radius: 14px; pointer-events: none; opacity: 0;
+.nav-ind { position: absolute; left: 0; top: 0; width: 100%; height: 38px; border-radius: 14px; pointer-events: none; opacity: 0;
   background: linear-gradient(90deg, rgba(34,211,238,.2), rgba(14,165,233,.06)); border: 1px solid rgba(34,211,238,.28);
   transition: transform .5s var(--ease), opacity .3s; box-shadow: 0 0 24px rgba(34,211,238,.12); }
-.nav-ind::before { content: ""; position: absolute; left: -1px; top: 11px; bottom: 11px; width: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
-.nav-item { position: relative; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 14px; border-radius: 14px; border: 0; background: transparent;
+.nav-ind::before { content: ""; position: absolute; left: -1px; top: 9px; bottom: 9px; width: 3px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+.nav-item { position: relative; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 14px; border-radius: 14px; border: 0; background: transparent;
   color: var(--muted); text-align: left; cursor: pointer; transition: color .2s, background .2s, transform .25s var(--ease); flex: none; }
 .nav-item svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s var(--ease); }
 .nav-item:hover { color: var(--text); background: rgba(255,255,255,.04); transform: translateX(3px); }

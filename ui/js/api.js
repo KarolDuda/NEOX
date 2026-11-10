@@ -28,6 +28,7 @@ export const win = {
 // ------------------------------------------------------------------ mock
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let mockApplied = new Set(['mouse_accel']);
+const mockScores = [{ time: 1731000000, label: 'Before tweaks', cpuOpsPerSec: 1.0e8, memoryMbps: 18000, timerAvgMs: 1.05, timerP99Ms: 1.9 }];
 let mockPremium = new URLSearchParams(location.search).has('premium');
 const MOCK_FREE = ['mouse_accel', 'tw_1', 'tw_2', 'tw_3', 'tw_4'];
 const needPrem = what => { if (!mockPremium) throw 'PREMIUM: ' + what + ' is part of NEOX Premium.'; };
@@ -55,6 +56,11 @@ async function mock(cmd, a) {
       { name: 'Startup apps', detail: '14 apps start with Windows', score: .5, weight: 15, fix: 'openStartup', ok: false },
       { name: 'Safe optimizations', detail: '6 of 12 applied', score: .5, weight: 30, fix: 'applySafeProfile', ok: false }] };
     case 'system_snapshot': return { cpu: { name: 'AMD Ryzen 7 5800X', cores: 8, threads: 16, mhz: 3800 }, gpus: [{ name: 'NVIDIA GeForce RTX 3070', driver: '31.0.15', vram: 8589934592, hz: 144 }], disks: [{ model: 'Samsung 980 PRO', type: 'SSD', size: 1e12, status: 'OK' }], volumes: [{ name: 'C:', total: 1e12, free: 4.1e11, fs: 'NTFS' }], os: { caption: 'Windows 11 Pro', version: '10.0', build: '26100', boot: 0, totalKb: 33554432, freeKb: 12e6 }, battery: false };
+    case 'restart_windows': return true;
+    case 'memory_clean': needPrem('Memory Cleaner'); return { beforeFree: 9e9, afterFree: 17e9, freed: 8e9, total: 32e9 };
+    case 'score_list': return mockScores;
+    case 'score_run': needPrem('Performance Score'); mockScores.push({ time: Math.floor(Date.now() / 1000), label: a.label || 'Measurement', cpuOpsPerSec: 1.0e8 + mockScores.length * 2e6, memoryMbps: 18000, timerAvgMs: 1.02, timerP99Ms: 1.4 - mockScores.length * 0.1 }); return mockScores;
+    case 'score_clear': mockScores.length = 0; return;
     case 'monitor_start': { let n = 0; const t = setInterval(() => emitMock('monitor', { cpuPercent: 20 + 25 * Math.abs(Math.sin(n++ / 4)), ramPercent: 48, ramUsedBytes: 16e9, ramTotalBytes: 32e9 }), 1000); return; }
     case 'monitor_stop': return;
     case 'autotune_plan': return { description: '8 cores / 16 threads · RAM 32 GB · desktop · SSD · discrete GPU', elevated: true, plan: { planned: mockCatalog.slice(1, 7).map(t => ({ id: t.id, title: t.title, reason: 'Safe for your hardware' })), skipped: [{ id: 'x', title: 'Ultimate Performance plan', reason: 'conflicts with the high-performance plan' }], hardware: {} } };
@@ -81,7 +87,7 @@ async function mock(cmd, a) {
     case 'net_ping_all': for (const n of ['Cloudflare', 'Google', 'Quad9']) { emitMock('ping-row', { name: n, stats: { host: '1.1.1.1', sent: 10, received: 10, minMs: 8, avgMs: 11.2, maxMs: 17, jitterMs: 2.1, lossPercent: 0 } }); await sleep(300); } return [];
     case 'net_mtu': return 1472;
     case 'net_dns_bench': for (const n of ['Cloudflare', 'Google', 'Quad9']) { emitMock('dns-row', { name: n, primary: '1.1.1.1', secondary: '1.0.0.1', medianMs: 9 + Math.random() * 20, failures: 0 }); await sleep(300); } return [];
-    case 'net_dns_set': needPrem('DNS switcher'); case 'net_dns_restore': return { success: true, message: 'DNS updated.', restart: 'none' };
+    case 'net_dns_set': case 'net_dns_restore': return { success: true, message: 'DNS updated.', restart: 'none' };
     case 'net_adapters': return [{ name: 'Ethernet', guid: '{x}', description: 'Realtek 2.5GbE', speedMbps: 2500, dns: ['1.1.1.1'], addresses: ['192.168.1.5'] }];
     case 'games_list': return [{ name: 'Fortnite', exePath: 'C:\\Games\\Fortnite\\FortniteClient-Win64-Shipping.exe', profileId: null }];
     case 'games_epic': return [{ name: 'Rocket League', exePath: 'D:\\Epic\\RL\\RocketLeague.exe' }];
