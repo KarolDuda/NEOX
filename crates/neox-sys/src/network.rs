@@ -162,7 +162,7 @@ mod tests {
 
     struct Nic;
     impl Adapters for Nic {
-        fn active(&self) -> Vec<AdapterInfo> { vec![AdapterInfo { name: "Eth'1".into(), guid: "G1".into(), description: "".into(), speed_mbps: 0, dns: vec![], addresses: vec![] }] }
+        fn active(&self) -> Vec<AdapterInfo> { vec![AdapterInfo { name: "Eth'1".into(), guid: "G1".into(), description: "".into(), speed_mbps: 0, dns: vec![], addresses: vec![], kind: "ethernet".into() }] }
     }
 
     #[test]

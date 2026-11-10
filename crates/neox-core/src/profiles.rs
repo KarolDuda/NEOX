@@ -60,6 +60,9 @@ fn is_profile_safe(t: &TweakDefinition) -> bool {
 /// Left out of "Maximum performance": conflicts with other items or only fixes specific symptoms.
 const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey"];
 
+/// Raise power draw or disable power saving; kept out of the laptop profile.
+const LAPTOP_UNSAFE: &[&str] = &["cpu_min", "core_parking", "boost_mode", "usb_suspend", "usb_reg", "pcie_aspm", "power_throttle", "cpu_epp", "cpu_idle_off", "wlan_perf", "ultimate_plan", "disk_idle"];
+
 pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
     let game_area = |t: &TweakDefinition| matches!(t.category, TweakCategory::Performance | TweakCategory::Input | TweakCategory::Network);
     let ids = |f: &dyn Fn(&TweakDefinition) -> bool| catalog.all().iter().filter(|t| f(t)).map(|t| t.id.clone()).collect::<Vec<_>>();
@@ -73,6 +76,20 @@ pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
         Profile { id: "builtin.max".into(), built_in: true, name: "Maximum performance".into(),
             description: "Everything that can raise performance or cut latency: every performance, input and network tweak including high-risk ones (CPU mitigations, VBS/HVCI, hypervisor). Back up first; some items lower security and need a restart.".into(),
             tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd | TweakKind::Cmd)) && game_area(t) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
+        Profile { id: "builtin.esports".into(), built_in: true, name: "Esports (lowest input latency)".into(),
+            description: "Everything that shortens the path from mouse and keyboard to the screen: input, timers, power, MMCSS. Includes experimental items and boot settings.".into(),
+            tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd)) && matches!(t.category, TweakCategory::Input | TweakCategory::Performance)
+                && !matches!(t.risk, RiskLevel::HighRisk) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
+        Profile { id: "builtin.network".into(), built_in: true, name: "Network boost".into(),
+            description: "Lower ping and jitter: every network item including TCP, DNS and adapter settings. Some adapter changes briefly reconnect the network.".into(),
+            tweak_ids: ids(&|t| !t.is_action() && t.category == TweakCategory::Network && !MAX_EXCLUDED.contains(&t.id.as_str())) },
+        Profile { id: "builtin.streaming".into(), built_in: true, name: "Gaming + streaming".into(),
+            description: "Gaming tweaks that keep OBS, Discord and the browser smooth: no services touched, no boot changes, nothing that limits background apps you stream with.".into(),
+            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)
+                && !matches!(t.id.as_str(), "bg_apps" | "bg_access_off" | "cpu_min" | "core_parking" | "ultimate_plan")) },
+        Profile { id: "builtin.laptop".into(), built_in: true, name: "Laptop (battery friendly)".into(),
+            description: "Only low-risk items that do not raise power draw: no forced maximum CPU state, no disabled power saving.".into(),
+            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && t.risk == RiskLevel::Recommended && !LAPTOP_UNSAFE.contains(&t.id.as_str())) },
         Profile { id: "builtin.privacy".into(), built_in: true, name: "Privacy".into(),
             description: "Recommended privacy settings (telemetry, ads, suggestions).".into(),
             tweak_ids: ids(&|t| !t.is_action() && t.category == TweakCategory::Privacy && t.risk == RiskLevel::Recommended) },
@@ -171,8 +188,8 @@ mod tests {
             assert!(!p.tweak_ids.is_empty(), "{}", p.name);
             for id in &p.tweak_ids {
                 let t = c.find(id).unwrap();
-                // "Maximum performance" is the one deliberate exception: it includes high-risk and boot items.
-                if p.id != "builtin.max" {
+                // "Maximum performance", "Esports" and "Network boost" deliberately include experimental or boot items.
+                if !matches!(p.id.as_str(), "builtin.max" | "builtin.esports" | "builtin.network") {
                     assert!(!matches!(t.risk, RiskLevel::Experimental | RiskLevel::HighRisk), "{id}");
                     assert!(!matches!(t.kind, TweakKind::Bcd), "{id}");
                 }

@@ -6,7 +6,9 @@ use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AdapterInfo { pub name: String, pub guid: String, pub description: String, pub speed_mbps: u64, pub dns: Vec<String>, pub addresses: Vec<String> }
+pub struct AdapterInfo { pub name: String, pub guid: String, pub description: String, pub speed_mbps: u64, pub dns: Vec<String>, pub addresses: Vec<String>,
+    /// "ethernet", "wifi" or "other" (from NdisPhysicalMedium: 14 = 802.3, 9 = native 802.11).
+    pub kind: String }
 
 pub trait Adapters: Send + Sync { fn active(&self) -> Vec<AdapterInfo>; }
 
@@ -15,7 +17,7 @@ pub struct PsAdapters { pub runner: std::sync::Arc<dyn Runner> }
 const SCRIPT: &str = "Get-NetAdapter -Physical | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { \
 $ip = Get-NetIPAddress -InterfaceIndex $_.ifIndex -ErrorAction SilentlyContinue | ForEach-Object { $_.IPAddress }; \
 $dns = (Get-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ErrorAction SilentlyContinue).ServerAddresses; \
-[pscustomobject]@{N=$_.Name;G=$_.InterfaceGuid;D=$_.InterfaceDescription;S=[int64]($_.Speed / 1000000);A=@($ip);DNS=@($dns)} } | ConvertTo-Json -Compress -Depth 3";
+[pscustomobject]@{N=$_.Name;G=$_.InterfaceGuid;D=$_.InterfaceDescription;S=[int64]($_.Speed / 1000000);M=[int]$_.NdisPhysicalMedium;A=@($ip);DNS=@($dns)} } | ConvertTo-Json -Compress -Depth 3";
 
 fn strings(v: &Value) -> Vec<String> {
     match v { Value::Array(a) => a.iter().filter_map(|x| x.as_str().map(String::from)).collect(), Value::String(s) => vec![s.clone()], _ => vec![] }
@@ -33,6 +35,7 @@ pub fn parse(output: &str) -> Vec<AdapterInfo> {
             description: i["D"].as_str().unwrap_or("").to_string(),
             speed_mbps: i["S"].as_u64().unwrap_or(0),
             addresses: strings(&i["A"]), dns: strings(&i["DNS"]),
+            kind: match i["M"].as_u64() { Some(14) => "ethernet", Some(9) => "wifi", _ => "other" }.into(),
         })
     }).filter(|a| !a.guid.is_empty()).collect()
 }
@@ -58,5 +61,9 @@ mod tests {
         let two = format!("[{one},{one}]");
         assert_eq!(parse(&two).len(), 2);
         assert!(parse("garbage").is_empty());
+        assert_eq!(a[0].kind, "other");
+        let w = parse(r#"{"N":"Wi-Fi","G":"{W}","D":"Intel AX","S":866,"M":9,"A":[],"DNS":[]}"#);
+        assert_eq!(w[0].kind, "wifi");
+        assert_eq!(parse(r#"{"N":"E","G":"{E}","D":"x","S":1,"M":14}"#)[0].kind, "ethernet");
     }
 }

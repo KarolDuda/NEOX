@@ -6,6 +6,7 @@ pub mod adapters;
 pub mod cleaner;
 pub mod games;
 pub mod handlers;
+pub mod hwid;
 pub mod managers;
 pub mod network;
 pub mod parse;

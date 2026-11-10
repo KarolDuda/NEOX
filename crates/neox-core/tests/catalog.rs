@@ -98,3 +98,18 @@ fn max_profile_covers_the_high_risk_performance_items() {
     assert!(!m.tweak_ids.iter().any(|x| x == "ultimate_plan"));
     assert!(m.tweak_ids.len() > 30);
 }
+
+#[test]
+fn every_free_id_exists_in_the_catalog() {
+    let c = cat();
+    for id in neox_core::license::FREE_IDS { assert!(c.find(id).is_some(), "{id}"); }
+}
+
+#[test]
+fn free_plan_is_safe_only() {
+    let c = cat();
+    for id in neox_core::license::FREE_IDS {
+        let t = c.find(id).unwrap();
+        assert!(matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution), "{id}");
+    }
+}

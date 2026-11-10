@@ -445,7 +445,7 @@ mod tests {
     struct OneNic;
     impl Adapters for OneNic {
         fn active(&self) -> Vec<AdapterInfo> {
-            vec![AdapterInfo { name: "Eth".into(), guid: "AAAA".into(), description: "".into(), speed_mbps: 1000, dns: vec![], addresses: vec![] }]
+            vec![AdapterInfo { name: "Eth".into(), guid: "AAAA".into(), description: "".into(), speed_mbps: 1000, dns: vec![], addresses: vec![], kind: "ethernet".into() }]
         }
     }
     fn cat() -> Catalog { Catalog::load_embedded().unwrap() }

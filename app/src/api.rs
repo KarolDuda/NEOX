@@ -4,6 +4,8 @@ use neox_core::autotune::{self, AutoTunePlan, BenchmarkResult, MetricDelta};
 use neox_core::catalog::Catalog;
 use neox_core::engine::{ActionHandler, Elevation, Engine, RestorePoints, TweakHandler};
 use neox_core::health::{self, HealthInput, HealthReport};
+use neox_core::license::{self, LicenseStatus};
+use neox_core::nettune;
 use neox_core::models::*;
 use neox_core::profiles::{self, ImportResult, ProfileApplyReport, ProfileService};
 use neox_core::state::{AppSettings, Baseline, GameProfile, HistoryEntry, Profile, StateStore};
@@ -50,6 +52,7 @@ pub struct Ctx {
     boost_on: AtomicBool,
     monitor_on: AtomicBool,
     pending_update: Mutex<Option<UpdateInfo>>,
+    hwid: std::sync::OnceLock<String>,
 }
 
 type S<'a> = tauri::State<'a, Arc<Ctx>>;
@@ -61,6 +64,18 @@ async fn blocking<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> 
 fn tctx(game_exe: Option<String>) -> TweakContext { TweakContext { game_exe_path: game_exe } }
 
 impl Ctx {
+    fn hwid(&self) -> &str { self.hwid.get_or_init(|| neox_sys::hwid::read(self.run.as_ref())) }
+    fn license(&self) -> LicenseStatus {
+        match self.store.read(|s| s.license_key.clone()) {
+            None => LicenseStatus::Free,
+            Some(k) => license::verify(&k, self.hwid(), neox_core::timefmt::now_unix()),
+        }
+    }
+    fn premium(&self) -> bool { self.license().is_premium() }
+    /// Err("PREMIUM: …") when the feature needs a license.
+    fn need(&self, feature: &str) -> Result<(), String> { license::check_feature(self.premium(), feature) }
+    fn need_item(&self, id: &str) -> Result<(), String> { if license::is_free(id) { Ok(()) } else { license::check_item(self.premium(), id) } }
+
     fn snapshot(&self) -> SystemSnapshot {
         let mut g = self.snapshot.lock().unwrap_or_else(|e| e.into_inner());
         if let Some((t, s)) = g.as_ref() { if t.elapsed() < Duration::from_secs(30) { return s.clone(); } }
@@ -159,7 +174,7 @@ async fn applied_ids(c: S<'_>) -> Result<Vec<String>, String> {
 #[tauri::command]
 async fn tweak_apply(c: S<'_>, id: String, game_exe: Option<String>) -> Result<TweakResult, String> {
     let c = c.inner().clone();
-    blocking(move || c.engine.apply(&id, &tctx(game_exe))).await
+    blocking(move || { c.need_item(&id)?; Ok(c.engine.apply(&id, &tctx(game_exe))) }).await?
 }
 
 #[tauri::command]
@@ -171,7 +186,7 @@ async fn tweak_revert(c: S<'_>, id: String, game_exe: Option<String>) -> Result<
 #[tauri::command]
 async fn action_run(c: S<'_>, id: String) -> Result<TweakResult, String> {
     let c = c.inner().clone();
-    blocking(move || c.engine.run_action(&id, &tctx(None))).await
+    blocking(move || { c.need_item(&id)?; Ok(c.engine.run_action(&id, &tctx(None))) }).await?
 }
 
 #[tauri::command]
@@ -192,22 +207,24 @@ async fn profiles_list(c: S<'_>) -> Result<Vec<Profile>, String> {
 async fn profile_apply(c: S<'_>, app: tauri::AppHandle, id: String, game_exe: Option<String>) -> Result<ProfileApplyReport, String> {
     let c = c.inner().clone();
     blocking(move || {
+        c.need("Profiles")?;
         let svc = c.profiles();
         let Some(p) = svc.all().into_iter().find(|p| p.id == id) else {
-            return ProfileApplyReport { applied: 0, skipped: 0, failed: 1, restart: RestartRequirement::None, lines: vec!["Unknown profile.".into()] };
+            return Ok(ProfileApplyReport { applied: 0, skipped: 0, failed: 1, restart: RestartRequirement::None, lines: vec!["Unknown profile.".into()] });
         };
-        svc.apply(&p, &tctx(game_exe), &|m| { let _ = app.emit("progress", m); })
-    }).await
+        Ok(svc.apply(&p, &tctx(game_exe), &|m| { let _ = app.emit("progress", m); }))
+    }).await?
 }
 
 #[tauri::command]
 async fn profile_save(c: S<'_>, name: String, description: Option<String>) -> Result<Option<Profile>, String> {
     let c = c.inner().clone();
     blocking(move || {
+        c.need("Custom profiles")?;
         let ids: Vec<String> = c.store.read(|s| s.snapshots.keys().cloned().collect());
-        if ids.is_empty() { return None; }
-        Some(c.profiles().save_custom(&name, &ids, &description.unwrap_or_else(|| "Custom profile from applied changes.".into())))
-    }).await
+        if ids.is_empty() { return Ok(None); }
+        Ok(Some(c.profiles().save_custom(&name, &ids, &description.unwrap_or_else(|| "Custom profile from applied changes.".into()))))
+    }).await?
 }
 
 #[tauri::command]
@@ -219,17 +236,18 @@ async fn profile_delete(c: S<'_>, id: String) -> Result<(), String> {
 #[tauri::command]
 async fn profile_export(c: S<'_>, id: String) -> Result<Option<String>, String> {
     let c = c.inner().clone();
-    blocking(move || c.profiles().all().into_iter().find(|p| p.id == id).map(|p| profiles::export(&p))).await
+    blocking(move || { c.need("Profile export")?; Ok(c.profiles().all().into_iter().find(|p| p.id == id).map(|p| profiles::export(&p))) }).await?
 }
 
 #[tauri::command]
 async fn profile_import(c: S<'_>, text: String) -> Result<ImportResult, String> {
     let c = c.inner().clone();
     blocking(move || {
+        c.need("Profile import")?;
         let r = profiles::import(c.engine.catalog(), &text);
         if let Some(p) = &r.profile { c.profiles().save_custom(&p.name, &p.tweak_ids, &p.description); }
-        r
-    }).await
+        Ok(r)
+    }).await?
 }
 
 #[tauri::command]
@@ -249,7 +267,7 @@ fn history_list(c: S<'_>) -> Vec<HistoryEntry> {
 #[tauri::command]
 async fn baseline_capture(c: S<'_>, name: String) -> Result<Baseline, String> {
     let c = c.inner().clone();
-    blocking(move || c.profiles().capture_baseline(&name, &tctx(None))).await
+    blocking(move || { c.need("Baselines")?; Ok(c.profiles().capture_baseline(&name, &tctx(None))) }).await?
 }
 
 #[tauri::command]
@@ -263,7 +281,8 @@ struct DiffRow { id: String, title: String, before: TweakStatus, now: TweakStatu
 async fn baseline_compare(c: S<'_>, index: usize) -> Result<Vec<DiffRow>, String> {
     let c = c.inner().clone();
     blocking(move || {
-        let Some(b) = c.store.read(|s| s.baselines.get(index).cloned()) else { return vec![] };
+        c.need("Baselines")?;
+        let Some(b) = c.store.read(|s| s.baselines.get(index).cloned()) else { return Ok(vec![]) };
         c.profiles().compare(&b, &tctx(None)).into_iter()
             .map(|(id, before, now)| DiffRow { title: c.engine.catalog().find(&id).map(|t| t.title.clone()).unwrap_or_else(|| id.clone()), id, before, now }).collect()
     }).await
@@ -294,6 +313,7 @@ struct AutoTuneReport { apply: ProfileApplyReport, applied_ids: Vec<String>, bef
 async fn autotune_run(c: S<'_>, app: tauri::AppHandle, ids: Vec<String>, benchmark: bool) -> Result<AutoTuneReport, String> {
     let c = c.inner().clone();
     blocking(move || {
+        c.need("Auto-Tune")?;
         let say = |m: &str| { let _ = app.emit("progress", m); };
         let never = || false;
         let before = if benchmark { say("Measuring your PC before the changes…"); neox_sys::bench::run(&say, &never) } else { None };
@@ -304,8 +324,8 @@ async fn autotune_run(c: S<'_>, app: tauri::AppHandle, ids: Vec<String>, benchma
         let _ = c.store.save();
         let after = if benchmark { say("Measuring again after the changes…"); neox_sys::bench::run(&say, &never) } else { None };
         let deltas = match (&before, &after) { (Some(b), Some(a)) => autotune::compare(b, a), _ => vec![] };
-        AutoTuneReport { apply, applied_ids, before, after, deltas }
-    }).await
+        Ok(AutoTuneReport { apply, applied_ids, before, after, deltas })
+    }).await?
 }
 
 #[tauri::command]
@@ -434,7 +454,7 @@ async fn net_dns_bench(app: tauri::AppHandle) -> Result<Vec<DnsBenchResult>, Str
 #[tauri::command]
 async fn net_dns_set(c: S<'_>, servers: Vec<String>) -> Result<TweakResult, String> {
     let c = c.inner().clone();
-    blocking(move || network::set_dns(c.run.as_ref(), c.adapters.as_ref(), c.reg.as_ref() as &dyn RegistryApi, &c.store, &servers)).await
+    blocking(move || { c.need("DNS switcher")?; Ok(network::set_dns(c.run.as_ref(), c.adapters.as_ref(), c.reg.as_ref() as &dyn RegistryApi, &c.store, &servers)) }).await?
 }
 
 #[tauri::command]
@@ -477,12 +497,13 @@ struct BoostView { enabled: bool, status: String }
 fn gameboost_get(c: S<'_>) -> BoostView { BoostView { enabled: c.boost_on.load(Ordering::SeqCst), status: c.boost.status() } }
 
 #[tauri::command]
-fn gameboost_set(c: S<'_>, enabled: bool) -> BoostView {
+fn gameboost_set(c: S<'_>, enabled: bool) -> Result<BoostView, String> {
     let c = c.inner().clone();
+    if enabled { c.need("Game Boost")?; }
     c.store.write(|s| s.settings.game_boost = enabled);
     let _ = c.store.save();
     if enabled { c.start_boost(); } else { c.boost_on.store(false, Ordering::SeqCst); }
-    BoostView { enabled, status: if enabled { "Waiting for a game to start".into() } else { "Off".into() } }
+    Ok(BoostView { enabled, status: if enabled { "Waiting for a game to start".into() } else { "Off".into() } })
 }
 
 #[tauri::command]
@@ -499,8 +520,8 @@ async fn fortnite_info(c: S<'_>) -> Result<(bool, Vec<String>, bool), String> {
 #[tauri::command]
 async fn fortnite_apply(c: S<'_>) -> Result<TweakResult, String> {
     let c = c.inner().clone();
-    blocking(move || match games::fortnite_apply_file(c.run.as_ref(), &games::fortnite_ini_path()) {
-        Ok(m) => TweakResult::ok(m, RestartRequirement::None), Err(e) => TweakResult::fail(e) }).await
+    blocking(move || { c.need("Fortnite optimizer")?; Ok(match games::fortnite_apply_file(c.run.as_ref(), &games::fortnite_ini_path()) {
+        Ok(m) => TweakResult::ok(m, RestartRequirement::None), Err(e) => TweakResult::fail(e) }) }).await?
 }
 
 #[tauri::command]
@@ -545,6 +566,118 @@ async fn update_install(c: S<'_>, app: tauri::AppHandle) -> Result<TweakResult, 
     Ok(res.0)
 }
 
+// ------------------------------------------------------------------ premium
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LicenseView { hwid: String, status: LicenseStatus, premium: bool, free_ids: Vec<&'static str>, buy_url: &'static str }
+
+fn license_view(c: &Ctx) -> LicenseView {
+    let status = c.license();
+    LicenseView { hwid: c.hwid().to_string(), premium: status.is_premium(), status, free_ids: license::FREE_IDS.to_vec(), buy_url: license::BUY_URL }
+}
+
+#[tauri::command]
+async fn license_info(c: S<'_>) -> Result<LicenseView, String> {
+    let c = c.inner().clone();
+    blocking(move || license_view(&c)).await
+}
+
+/// Saves the key only when it is valid for this PC; otherwise reports why without touching the stored key.
+#[tauri::command]
+async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        let st = license::verify(&token, c.hwid(), neox_core::timefmt::now_unix());
+        if st.is_premium() { c.store.write(|s| s.license_key = Some(token.trim().to_string())); let _ = c.store.save(); }
+        st
+    }).await
+}
+
+#[tauri::command]
+async fn license_remove(c: S<'_>) -> Result<(), String> {
+    let c = c.inner().clone();
+    blocking(move || { c.store.write(|s| s.license_key = None); let _ = c.store.save(); }).await
+}
+
+/// Opens the purchase invite. Only the fixed URL is ever opened; the UI cannot pass one.
+#[tauri::command]
+async fn open_buy(c: S<'_>) -> Result<(), String> {
+    let c = c.inner().clone();
+    blocking(move || { let _ = c.run.run(&["explorer.exe".to_string(), license::BUY_URL.to_string()], 10); }).await
+}
+
+// ------------------------------------------------------------------ internet auto-tune (premium)
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NetPlanView { plan: nettune::NetPlan, adapters: Vec<neox_sys::adapters::AdapterInfo>, elevated: bool }
+
+#[tauri::command]
+async fn nettune_plan(c: S<'_>) -> Result<NetPlanView, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        let adapters = c.adapters.active();
+        let eth = adapters.iter().any(|a| a.kind == "ethernet");
+        let wifi = adapters.iter().any(|a| a.kind == "wifi");
+        // Unknown adapter type: treat as Ethernet-like so the user still gets the common items.
+        let plan = nettune::plan(c.engine.catalog(), eth, wifi, c.engine.is_elevated(), &|id| c.engine.is_applied(id));
+        NetPlanView { plan, adapters, elevated: c.engine.is_elevated() }
+    }).await
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NetTuneReport { apply: ProfileApplyReport, applied_ids: Vec<String>, deltas: Vec<MetricDelta> }
+
+fn ping_summary(c: &Ctx, say: &dyn Fn(&str)) -> (f64, f64, f64) {
+    let (mut avg, mut jit, mut loss, mut n) = (0.0, 0.0, 0.0, 0.0);
+    for (name, host) in network::PING_TARGETS.iter().take(3) {
+        say(&format!("Measuring latency: {name}…"));
+        if let Ok(s) = network::ping(c.run.as_ref(), host, 10) { if s.received > 0 { avg += s.avg_ms; jit += s.jitter_ms; loss += s.loss_percent; n += 1.0; } }
+    }
+    if n == 0.0 { (0.0, 0.0, 0.0) } else { (avg / n, jit / n, loss / n) }
+}
+
+#[tauri::command]
+async fn nettune_run(c: S<'_>, app: tauri::AppHandle, ids: Vec<String>, measure: bool) -> Result<NetTuneReport, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        c.need("Internet Auto-Tune")?;
+        let say = |m: &str| { let _ = app.emit("progress", m); };
+        let before = if measure { Some(ping_summary(&c, &say)) } else { None };
+        let profile = Profile { id: "nettune".into(), name: "Internet Auto-Tune".into(), description: String::new(), built_in: false, tweak_ids: ids };
+        let apply = c.profiles().apply(&profile, &tctx(None), &say);
+        let applied_ids: Vec<String> = profile.tweak_ids.iter().filter(|id| c.engine.is_applied(id)).cloned().collect();
+        c.store.write(|s| s.last_nettune_ids = applied_ids.clone());
+        let _ = c.store.save();
+        let mut deltas = vec![];
+        if let Some(b) = before {
+            say("Waiting for the network to settle…");
+            std::thread::sleep(Duration::from_secs(4));
+            let a = ping_summary(&c, &say);
+            if b.0 > 0.0 && a.0 > 0.0 {
+                deltas.push(autotune::make("Average latency", "ms", b.0, a.0, false, autotune::LATENCY_NOISE_PERCENT));
+                deltas.push(autotune::make("Jitter", "ms", b.1, a.1, false, autotune::LATENCY_NOISE_PERCENT));
+                deltas.push(autotune::make("Packet loss", "%", b.2, a.2, false, autotune::LATENCY_NOISE_PERCENT));
+            }
+        }
+        Ok(NetTuneReport { apply, applied_ids, deltas })
+    }).await?
+}
+
+#[tauri::command]
+async fn nettune_undo(c: S<'_>) -> Result<usize, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        let ids: Vec<String> = c.store.read(|s| s.last_nettune_ids.clone());
+        let n = ids.iter().filter(|id| c.engine.revert(id, &tctx(None)).success).count();
+        c.store.write(|s| s.last_nettune_ids.clear());
+        let _ = c.store.save();
+        n
+    }).await
+}
+
 // ------------------------------------------------------------------ bootstrap
 
 pub fn run() {
@@ -581,11 +714,11 @@ pub fn run() {
 
     let ctx = Arc::new(Ctx {
         engine, store: store.clone(), run, reg, adapters, restore, snapshot: Mutex::new(None), boost, boost_on: AtomicBool::new(false),
-        monitor_on: AtomicBool::new(false), pending_update: Mutex::new(None),
+        monitor_on: AtomicBool::new(false), pending_update: Mutex::new(None), hwid: std::sync::OnceLock::new(),
     });
 
     // Crash recovery: a power plan left behind by an interrupted Game Boost is restored right away.
-    if store.read(|s| s.settings.game_boost) { ctx.start_boost(); } else { ctx.boost.restore(); }
+    if store.read(|s| s.settings.game_boost) && ctx.premium() { ctx.start_boost(); } else { ctx.boost.restore(); }
 
     tauri::Builder::default()
         .manage(ctx)
@@ -604,6 +737,7 @@ pub fn run() {
             net_ping_all, net_mtu, net_dns_bench, net_dns_set, net_dns_restore, net_adapters,
             games_list, games_epic, game_add, game_remove, gameboost_get, gameboost_set, fortnite_info, fortnite_apply, fortnite_restore,
             update_check, update_install,
+            license_info, license_activate, license_remove, open_buy, nettune_plan, nettune_run, nettune_undo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running NEOX");
