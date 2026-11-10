@@ -22,15 +22,21 @@ export default async function premium({ go }) {
   const lic = await refreshLicense();
   const st = lic.status;
   const buy = h('button', { class: 'btn gold lg' }, 'Buy Premium version');
+  const trial = h('button', { class: 'btn lg' }, 'Start 7-day free trial');
+  trial.onclick = () => busy(trial, async () => {
+    trial.textContent = 'Starting…';
+    const r = await call('license_trial');
+    if (r.state === 'active') { toast('Trial started. Everything is unlocked for 7 days.', 'ok'); go('premium'); } else toast(r.reason || 'The trial could not be started.', 'err', 7000);
+  });
   buy.onclick = () => call('open_buy').catch(() => toast('Open https://discord.gg/2h9FUFb99 in your browser.', 'info'));
 
   const hero = h('div', { class: 'prem-hero' },
     h('div', { class: 'eyebrow gold-text' }, 'NEOX PREMIUM'),
     h('h1', {}, lic.premium ? 'Premium is active' : 'Everything NEOX can do. Unlocked.'),
     h('p', { class: 'muted', style: { maxWidth: '640px' } }, lic.premium
-      ? `Licensed to ${st.name}. Bound to this PC.` + (st.exp ? ` Valid until ${fmtTime(st.exp * 1000)}.` : ' Lifetime license.')
+      ? (st.id === 'TRIAL' ? `Free trial. ${Math.max(0, Math.ceil((st.exp * 1000 - Date.now()) / 864e5))} day(s) left. When it ends, everything you applied with Premium is reverted automatically.` : `Licensed to ${st.name}. Bound to this PC.` + (st.exp ? ` Valid until ${fmtTime(st.exp * 1000)}.` : ' Lifetime license.'))
       : 'Free gives you 40 safe optimizations and the DNS switcher. Premium adds every optimization, Auto-Tune, Internet Auto-Tune, Memory Cleaner, Performance Score, profiles and game tools.'),
-    lic.premium ? null : h('div', { class: 'row wrap', style: { marginTop: '16px' } }, buy, h('span', { class: 'small muted' }, 'Opens our Discord. Open a ticket in the Purchase channel.')));
+    lic.premium && st.id !== 'TRIAL' ? null : h('div', { class: 'row wrap', style: { marginTop: '16px' } }, buy, lic.premium ? null : trial, h('span', { class: 'small muted' }, lic.premium ? 'Opens our Discord. Open a ticket in the Purchase channel.' : 'Trial: no payment, one per PC. After 7 days Premium changes are reverted automatically.')));
 
   const activate = activateCard(lic, go);
 

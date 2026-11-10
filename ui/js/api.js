@@ -43,7 +43,7 @@ const mockCatalog = Array.from({ length: 36 }, (_, i) => ({
 async function mock(cmd, a) {
   await sleep(120);
   switch (cmd) {
-    case 'app_info': return { version: '3.1.0-mock', elevated: true, firstRunDone: false, settings: { autoUpdate: true, createRestorePointBeforeProfiles: true, gameExePath: null, firstRunDone: false, gameBoost: false, lastAutoTune: null }, pendingRestart: ['mouse_accel'], appliedCount: mockApplied.size };
+    case 'app_info': return { version: '3.1.0-mock', elevated: true, firstRunDone: false, settings: { autoUpdate: true, createRestorePointBeforeProfiles: true, gameExePath: null, firstRunDone: false, gameBoost: false, lastAutoTune: null }, pendingRestart: ['mouse_accel'], appliedCount: mockApplied.size, downgradeNotice: new URLSearchParams(location.search).has('downgraded') ? 7 : 0 };
     case 'catalog_list': return mockCatalog;
     case 'statuses': return Object.fromEntries(mockCatalog.map(t => [t.id, mockApplied.has(t.id) ? 'applied' : 'notApplied']));
     case 'applied_ids': return [...mockApplied];
@@ -72,6 +72,8 @@ async function mock(cmd, a) {
     case 'profiles_list': return [{ id: 'builtin.safe', name: 'Safe', description: 'Only low-risk, reversible tweaks.', builtIn: true, tweakIds: ['tw_1', 'tw_2'] }, { id: 'builtin.max', name: 'Maximum performance', description: 'Everything that raises performance, incl. high-risk items.', builtIn: true, tweakIds: ['tw_1', 'tw_3', 'tw_5'] }];
     case 'license_info': return { hwid: 'NEOX-1A2B-3C4D-5E6F-7A8B', premium: mockPremium, status: mockPremium ? { state: 'active', id: 'L-1', name: 'Tester', exp: 0 } : { state: 'free' }, freeIds: MOCK_FREE, buyUrl: 'https://discord.gg/2h9FUFb99' };
     case 'license_activate': if (a.token.startsWith('NEOX1.') || /^NEOX-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(a.token.trim())) { mockPremium = true; return { state: 'active', id: 'L-1', name: 'Tester', exp: 0 }; } return { state: 'invalid', reason: 'This is not a NEOX license key.' };
+    case 'license_trial': mockPremium = true; return { state: 'active', id: 'TRIAL', name: 'Trial', exp: Math.floor(Date.now() / 1000) + 7 * 86400 };
+    case 'ack_downgrade': return;
     case 'license_remove': mockPremium = false; return;
     case 'open_buy': window.open('https://discord.gg/2h9FUFb99', '_blank'); return;
     case 'nettune_plan': return { plan: { ethernet: true, wifi: true, planned: [{ id: 'net_throttle', title: 'Turn off network throttling', reason: 'removes the packet limit' }, { id: 'nic_im_off', title: 'NIC: disable interrupt moderation', reason: 'packets reach the CPU immediately' }, { id: 'wlan_perf', title: 'Wi-Fi: maximum performance mode', reason: 'Wi-Fi power mode set to maximum' }], skipped: [{ id: 'qos_limit', title: 'Remove QoS limit', reason: 'already applied' }] }, adapters: [{ name: 'Ethernet', kind: 'ethernet', description: 'Realtek 2.5GbE', speedMbps: 2500 }, { name: 'Wi-Fi', kind: 'wifi', description: 'Intel AX210', speedMbps: 1200 }], elevated: true };

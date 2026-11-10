@@ -103,6 +103,10 @@ pub struct AppState {
     pub license_key: Option<String>,
     /// Activation bound to this PC by the license server.
     pub activation: Option<crate::activation::Activation>,
+    /// True once a license, code or trial was activated on this PC. Only then are premium changes rolled back at the end.
+    pub premium_ever: bool,
+    /// How many premium changes were rolled back and not yet shown to the user.
+    pub downgrade_notice: usize,
     /// Ids applied by the last Internet Auto-Tune run.
     pub last_nettune_ids: Vec<String>,
     pub settings: AppSettings,
@@ -110,7 +114,7 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self { schema_version: 1, snapshots: HashMap::new(), history: Vec::new(), custom_profiles: Vec::new(), games: Vec::new(),
-               baselines: Vec::new(), pending_restart: Vec::new(), pending_restart_at: 0, score_history: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, activation: None, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
+               baselines: Vec::new(), pending_restart: Vec::new(), pending_restart_at: 0, score_history: Vec::new(), dns_backups: HashMap::new(), last_autotune_ids: Vec::new(), license_key: None, activation: None, premium_ever: false, downgrade_notice: 0, last_nettune_ids: Vec::new(), settings: AppSettings::default() }
     }
 }
 

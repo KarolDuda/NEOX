@@ -88,13 +88,25 @@ impl Ctx {
         let now = neox_core::timefmt::now_unix();
         let Some(a) = self.store.read(|s| s.activation.clone()) else { return };
         if !needs_recheck(&a, now) { return; }
-        match neox_sys::activation::verify(self.run.as_ref(), &a.code, self.hwid()) {
+        let reply = if neox_core::activation::is_trial(&a) { neox_sys::activation::trial(self.run.as_ref(), self.hwid()) } else { neox_sys::activation::verify(self.run.as_ref(), &a.code, self.hwid()) };
+        match reply {
             Reply::Ok { name, exp } => { self.store.write(|s| if let Some(x) = s.activation.as_mut() { x.verified_at = now; x.name = name; x.exp = exp; }); let _ = self.store.save(); }
             Reply::Denied(_) => { self.store.write(|s| s.activation = None); let _ = self.store.save(); }
             Reply::Unreachable => {}
         }
     }
     fn premium(&self) -> bool { self.license().is_premium() }
+    /// When Premium (or the trial) has ended, everything that was applied with it is rolled back to how it was before.
+    /// Free items stay. Returns how many changes were reverted. Never runs for a user who never had Premium.
+    fn enforce_free_plan(&self) -> usize {
+        if !self.store.read(|s| s.premium_ever) || self.premium() { return 0; }
+        let ids: Vec<String> = self.store.read(|s| s.snapshots.keys().filter(|id| !license::is_free(id)).cloned().collect());
+        let n = ids.iter().filter(|id| self.engine.revert(id, &tctx(None)).success).count();
+        if self.store.read(|s| s.settings.game_boost) { self.store.write(|s| s.settings.game_boost = false); }
+        if n > 0 { self.store.write(|s| s.downgrade_notice += n); }
+        let _ = self.store.save();
+        n
+    }
     /// Err("PREMIUM: …") when the feature needs a license.
     fn need(&self, feature: &str) -> Result<(), String> { license::check_feature(self.premium(), feature) }
     fn need_item(&self, id: &str) -> Result<(), String> { if license::is_free(id) { Ok(()) } else { license::check_item(self.premium(), id) } }
@@ -128,7 +140,7 @@ impl Ctx {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct AppInfo { version: String, elevated: bool, first_run_done: bool, settings: AppSettings, pending_restart: Vec<String>, applied_count: usize }
+struct AppInfo { version: String, elevated: bool, first_run_done: bool, settings: AppSettings, pending_restart: Vec<String>, applied_count: usize, downgrade_notice: usize }
 
 #[tauri::command]
 async fn app_info(c: S<'_>) -> Result<AppInfo, String> {
@@ -138,10 +150,12 @@ async fn app_info(c: S<'_>) -> Result<AppInfo, String> {
         let now = neox_core::timefmt::now_unix();
         let boot = neox_sys::memory::boot_unix(now);
         if boot > 0 { if c.engine.clear_pending_if_rebooted(boot) { let _ = c.store.save(); } }
+        c.recheck_activation();
+        c.enforce_free_plan();
         AppInfo {
         version: update::current_version().to_string(), elevated: c.engine.is_elevated(),
         first_run_done: c.store.read(|s| s.settings.first_run_done), settings: c.store.read(|s| s.settings.clone()),
-        pending_restart: c.store.read(|s| s.pending_restart.clone()), applied_count: c.store.read(|s| s.snapshots.len()),
+        pending_restart: c.store.read(|s| s.pending_restart.clone()), applied_count: c.store.read(|s| s.snapshots.len()), downgrade_notice: c.store.read(|s| s.downgrade_notice),
     } }).await
 }
 
@@ -624,7 +638,7 @@ async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, Stri
                 neox_core::activation::Reply::Ok { name, exp } => {
                     let a = neox_core::activation::Activation { code, hwid: c.hwid().to_string(), name, exp, verified_at: now };
                     let st = neox_core::activation::status(&a, c.hwid(), now);
-                    c.store.write(|s| s.activation = Some(a)); let _ = c.store.save();
+                    c.store.write(|s| { s.activation = Some(a); s.premium_ever = true; }); let _ = c.store.save();
                     st
                 }
                 neox_core::activation::Reply::Denied(r) => LicenseStatus::Invalid { reason: r },
@@ -632,7 +646,7 @@ async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, Stri
             };
         }
         let st = license::verify(&token, c.hwid(), now);
-        if st.is_premium() { c.store.write(|s| s.license_key = Some(token.trim().to_string())); let _ = c.store.save(); }
+        if st.is_premium() { c.store.write(|s| { s.license_key = Some(token.trim().to_string()); s.premium_ever = true; }); let _ = c.store.save(); }
         st
     }).await
 }
@@ -641,6 +655,35 @@ async fn license_activate(c: S<'_>, token: String) -> Result<LicenseStatus, Stri
 async fn license_remove(c: S<'_>) -> Result<(), String> {
     let c = c.inner().clone();
     blocking(move || { c.store.write(|s| { s.license_key = None; s.activation = None; }); let _ = c.store.save(); }).await
+}
+
+
+/// Starts the 7-day trial for this PC. The server allows one trial per hardware id.
+#[tauri::command]
+async fn license_trial(c: S<'_>) -> Result<LicenseStatus, String> {
+    let c = c.inner().clone();
+    blocking(move || {
+        let now = neox_core::timefmt::now_unix();
+        if neox_sys::activation::server_url().is_none() { return LicenseStatus::Invalid { reason: "The trial is not available in this build.".into() }; }
+        if c.premium() { return LicenseStatus::Invalid { reason: "Premium is already active on this PC.".into() }; }
+        match neox_sys::activation::trial(c.run.as_ref(), c.hwid()) {
+            neox_core::activation::Reply::Ok { name, exp } => {
+                let a = neox_core::activation::Activation { code: neox_core::activation::TRIAL_CODE.into(), hwid: c.hwid().to_string(), name: if name.is_empty() { "Trial".into() } else { name }, exp, verified_at: now };
+                let st = neox_core::activation::status(&a, c.hwid(), now);
+                c.store.write(|s| { s.activation = Some(a); s.premium_ever = true; }); let _ = c.store.save();
+                st
+            }
+            neox_core::activation::Reply::Denied(r) => LicenseStatus::Invalid { reason: r },
+            neox_core::activation::Reply::Unreachable => LicenseStatus::Invalid { reason: "Could not reach the license server. Check your internet connection and try again.".into() },
+        }
+    }).await
+}
+
+/// The user has been told that premium changes were rolled back.
+#[tauri::command]
+async fn ack_downgrade(c: S<'_>) -> Result<(), String> {
+    let c = c.inner().clone();
+    blocking(move || { c.store.write(|s| s.downgrade_notice = 0); let _ = c.store.save(); }).await
 }
 
 /// Opens the purchase invite. Only the fixed URL is ever opened; the UI cannot pass one.
@@ -839,7 +882,7 @@ pub fn run() {
             net_ping_all, net_mtu, net_dns_bench, net_dns_set, net_dns_restore, net_adapters,
             games_list, games_epic, game_add, game_remove, gameboost_get, gameboost_set, fortnite_info, fortnite_apply, fortnite_restore,
             update_check, update_install,
-            license_info, license_activate, license_remove, open_buy, nettune_plan, nettune_run, nettune_undo,
+            license_info, license_activate, license_remove, license_trial, ack_downgrade, open_buy, nettune_plan, nettune_run, nettune_undo,
             restart_windows, memory_clean, score_list, score_run, score_clear,
         ])
         .run(tauri::generate_context!())

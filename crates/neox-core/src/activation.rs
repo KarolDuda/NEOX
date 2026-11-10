@@ -24,6 +24,11 @@ impl Default for Activation { fn default() -> Self { Activation { code: String::
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Reply { Ok { name: String, exp: i64 }, Denied(String), Unreachable }
 
+/// Marker stored as the code of a trial activation.
+pub const TRIAL_CODE: &str = "TRIAL";
+
+pub fn is_trial(a: &Activation) -> bool { a.code == TRIAL_CODE }
+
 /// `NEOX-XXXX-XXXX-XXXX` (three groups). Hardware ids have four groups and are not codes.
 pub fn normalize_code(input: &str) -> Option<String> {
     let t = input.trim().to_ascii_uppercase();
@@ -81,6 +86,11 @@ mod tests {
         assert!(!status(&act(1000), "NEOX-9999-9999-9999-9999", 1000).is_premium());
         let mut e = act(1000); e.exp = 1500;
         assert!(status(&e, h, 1400).is_premium()); assert!(!status(&e, h, 1501).is_premium());
+    }
+    #[test]
+    fn trial_activation_is_marked_and_expires_like_any_other() {
+        let t = Activation { code: TRIAL_CODE.into(), hwid: "H".into(), name: "Trial".into(), exp: 5000, verified_at: 1000 };
+        assert!(is_trial(&t) && status(&t, "H", 4000).is_premium() && !status(&t, "H", 5001).is_premium());
     }
     #[test]
     fn recheck_is_due_after_six_hours() {

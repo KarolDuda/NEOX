@@ -76,6 +76,10 @@ async function boot() {
   await new Promise(r => setTimeout(r, 650));
   await backupWarning();
 
+  if (S.info && S.info.downgradeNotice > 0) {
+    await confirmBox('Premium has ended', `Your Premium access ended, so ${S.info.downgradeNotice} change(s) made with Premium were reverted to how they were before. Items from the free plan stay. Activate Premium again to re-apply them.`, 'OK');
+    await call('ack_downgrade'); await refreshInfo();
+  }
   if (S.info && !S.info.firstRunDone) setTimeout(async () => {
     const yes = await confirmBox('Welcome to NEOX', 'Run Auto-Tune now? It scans your hardware and applies only safe, reversible tweaks — you review the plan first.', 'Open Auto-Tune');
     await call('settings_set', { patch: { firstRunDone: true } }); await refreshInfo(); if (yes) go('autotune');
