@@ -5,7 +5,9 @@ use neox_core::activation::{parse_reply, Reply};
 
 pub fn server_url() -> Option<&'static str> {
     // Build-time secret first; otherwise the optional data/activation_url.txt (empty by default).
-    let u = option_env!("NEOX_ACTIVATION_URL").unwrap_or(include_str!("../data/activation_url.txt")).trim();
+    // An unset CI secret arrives as an empty string, so treat empty as "not set" and fall back to the file.
+    let env = option_env!("NEOX_ACTIVATION_URL").map(str::trim).filter(|v| !v.is_empty());
+    let u = env.unwrap_or_else(|| include_str!("../data/activation_url.txt").trim());
     if u.is_empty() { return None; }
     // Only a plain https URL made of safe characters is ever used: it goes into a PowerShell string.
     let ok = u.starts_with("https://") && u.len() < 400 && u.bytes().all(|b| b.is_ascii_alphanumeric() || b"-._~:/?#[]@!$&()*+,;=%".contains(&b));
