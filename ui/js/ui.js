@@ -15,6 +15,7 @@ export function h(tag, attrs, ...kids) {
 export const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 export function toast(msg, kind = 'info', ms = 4200) {
+  if (String(msg).startsWith('PREMIUM:')) return; // the shell shows one upsell prompt instead
   const t = h('div', { class: 'toast ' + kind }, msg);
   document.getElementById('toasts').append(t);
   setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 350); }, ms);
@@ -90,3 +91,7 @@ export async function busy(btn, fn) {
 export function fmtTime(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString(); }
 export const CAT_NAMES = { performance: 'Performance', input: 'Input', network: 'Network', privacy: 'Privacy', services: 'Services', appearance: 'Appearance', cleanup: 'Cleanup', tools: 'Tools' };
 export const EFFECT = { unknown: 'Effect: unmeasured', large: 'Claimed effect: large', medium: 'Claimed effect: medium', hardwareDependent: 'Depends on hardware', small: 'Claimed effect: small', negligible: 'Effect: negligible', tool: 'Tool' };
+
+export const LOCK_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+export function lockButton(go, label = 'Premium') { return h('button', { class: 'btn sm gold', html: LOCK_SVG + '<span>' + label + '</span>', onclick: () => go('premium') }); }
+export const premiumBadge = () => h('span', { class: 'badge b-premium' }, 'Premium');

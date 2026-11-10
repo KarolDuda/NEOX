@@ -11,8 +11,12 @@ export async function on(event, fn) {
 function emitMock(event, payload) { (listeners.get(event) || []).forEach(f => f(payload)); }
 
 export async function call(cmd, args = {}) {
-  if (T) return T.core.invoke(cmd, args);
-  return mock(cmd, args);
+  try { return T ? await T.core.invoke(cmd, args) : await mock(cmd, args); }
+  catch (e) {
+    // The backend refuses premium items with "PREMIUM: …"; the shell turns that into one upsell prompt.
+    if (String(e).startsWith('PREMIUM:')) window.dispatchEvent(new CustomEvent('neox-premium', { detail: String(e).slice(8).trim() }));
+    throw e;
+  }
 }
 
 export const win = {
@@ -24,6 +28,9 @@ export const win = {
 // ------------------------------------------------------------------ mock
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let mockApplied = new Set(['mouse_accel']);
+let mockPremium = new URLSearchParams(location.search).has('premium');
+const MOCK_FREE = ['mouse_accel', 'tw_1', 'tw_2', 'tw_3', 'tw_4'];
+const needPrem = what => { if (!mockPremium) throw 'PREMIUM: ' + what + ' is part of NEOX Premium.'; };
 const CATS = ['performance', 'input', 'network', 'privacy', 'services', 'appearance', 'cleanup', 'tools'];
 const RISK = ['recommended', 'caution', 'experimental', 'highRisk'];
 const mockCatalog = Array.from({ length: 36 }, (_, i) => ({
@@ -39,7 +46,7 @@ async function mock(cmd, a) {
     case 'catalog_list': return mockCatalog;
     case 'statuses': return Object.fromEntries(mockCatalog.map(t => [t.id, mockApplied.has(t.id) ? 'applied' : 'notApplied']));
     case 'applied_ids': return [...mockApplied];
-    case 'tweak_apply': mockApplied.add(a.id); return { success: true, message: 'Applied and verified.', restart: 'none' };
+    case 'tweak_apply': if (!MOCK_FREE.includes(a.id)) needPrem('This optimization'); mockApplied.add(a.id); return { success: true, message: 'Applied and verified.', restart: 'none' };
     case 'tweak_revert': mockApplied.delete(a.id); return { success: true, message: 'Reverted.', restart: 'none' };
     case 'action_run': return { success: true, message: 'Done: freed 412 MB.', restart: 'none' };
     case 'health_scan': return { score: 77, label: 'Good', checks: [
@@ -51,13 +58,20 @@ async function mock(cmd, a) {
     case 'monitor_start': { let n = 0; const t = setInterval(() => emitMock('monitor', { cpuPercent: 20 + 25 * Math.abs(Math.sin(n++ / 4)), ramPercent: 48, ramUsedBytes: 16e9, ramTotalBytes: 32e9 }), 1000); return; }
     case 'monitor_stop': return;
     case 'autotune_plan': return { description: '8 cores / 16 threads · RAM 32 GB · desktop · SSD · discrete GPU', elevated: true, plan: { planned: mockCatalog.slice(1, 7).map(t => ({ id: t.id, title: t.title, reason: 'Safe for your hardware' })), skipped: [{ id: 'x', title: 'Ultimate Performance plan', reason: 'conflicts with the high-performance plan' }], hardware: {} } };
-    case 'autotune_run': for (const m of ['Benchmark before…', 'Applying…', 'Benchmark after…']) { emitMock('progress', m); await sleep(400); } return { apply: { applied: a.ids.length, skipped: 0, failed: 0, restart: 'none', lines: [] }, appliedIds: a.ids, before: {}, after: {}, deltas: [
+    case 'autotune_run': needPrem('Auto-Tune'); for (const m of ['Benchmark before…', 'Applying…', 'Benchmark after…']) { emitMock('progress', m); await sleep(400); } return { apply: { applied: a.ids.length, skipped: 0, failed: 0, restart: 'none', lines: [] }, appliedIds: a.ids, before: {}, after: {}, deltas: [
       { name: 'CPU throughput', unit: 'Mops/s', before: 100, after: 103, percent: 3, verdict: 'noise', higherIsBetter: true },
       { name: 'Memory bandwidth', unit: 'MB/s', before: 18000, after: 19800, percent: 10, verdict: 'better', higherIsBetter: true },
       { name: 'Timer p99', unit: 'ms', before: 1.9, after: 1.4, percent: -26, verdict: 'better', higherIsBetter: false }] };
     case 'autotune_undo': return 6;
     case 'profiles_list': return [{ id: 'builtin.safe', name: 'Safe', description: 'Only low-risk, reversible tweaks.', builtIn: true, tweakIds: ['tw_1', 'tw_2'] }, { id: 'builtin.max', name: 'Maximum performance', description: 'Everything that raises performance, incl. high-risk items.', builtIn: true, tweakIds: ['tw_1', 'tw_3', 'tw_5'] }];
-    case 'profile_apply': emitMock('progress', 'Applying profile…'); await sleep(500); return { applied: 2, skipped: 0, failed: 0, restart: 'none', lines: ['Disable Game DVR: ok'] };
+    case 'license_info': return { hwid: 'NEOX-1A2B-3C4D-5E6F-7A8B', premium: mockPremium, status: mockPremium ? { state: 'active', id: 'L-1', name: 'Tester', exp: 0 } : { state: 'free' }, freeIds: MOCK_FREE, buyUrl: 'https://discord.gg/2h9FUFb99' };
+    case 'license_activate': if (a.token.startsWith('NEOX1.')) { mockPremium = true; return { state: 'active', id: 'L-1', name: 'Tester', exp: 0 }; } return { state: 'invalid', reason: 'This is not a NEOX license key.' };
+    case 'license_remove': mockPremium = false; return;
+    case 'open_buy': window.open('https://discord.gg/2h9FUFb99', '_blank'); return;
+    case 'nettune_plan': return { plan: { ethernet: true, wifi: true, planned: [{ id: 'net_throttle', title: 'Turn off network throttling', reason: 'removes the packet limit' }, { id: 'nic_im_off', title: 'NIC: disable interrupt moderation', reason: 'packets reach the CPU immediately' }, { id: 'wlan_perf', title: 'Wi-Fi: maximum performance mode', reason: 'Wi-Fi power mode set to maximum' }], skipped: [{ id: 'qos_limit', title: 'Remove QoS limit', reason: 'already applied' }] }, adapters: [{ name: 'Ethernet', kind: 'ethernet', description: 'Realtek 2.5GbE', speedMbps: 2500 }, { name: 'Wi-Fi', kind: 'wifi', description: 'Intel AX210', speedMbps: 1200 }], elevated: true };
+    case 'nettune_run': needPrem('Internet Auto-Tune'); for (const m of ['Measuring latency…', 'Applying…', 'Measuring again…']) { emitMock('progress', m); await sleep(400); } return { apply: { applied: a.ids.length, skipped: 0, failed: 0, restart: 'none', lines: [] }, appliedIds: a.ids, deltas: [{ name: 'Average latency', unit: 'ms', before: 24.1, after: 19.8, percent: -17.8, verdict: 'better', higherIsBetter: false }, { name: 'Jitter', unit: 'ms', before: 3.2, after: 3.0, percent: -6, verdict: 'noise', higherIsBetter: false }] };
+    case 'nettune_undo': return 3;
+    case 'profile_apply': needPrem('Profiles'); emitMock('progress', 'Applying profile…'); await sleep(500); return { applied: 2, skipped: 0, failed: 0, restart: 'none', lines: ['Disable Game DVR: ok'] };
     case 'history_list': return [{ id: '1', time: new Date().toISOString(), tweakId: 'mouse_accel', title: 'Disable mouse acceleration', action: 'apply', success: true, message: 'Applied and verified.' }];
     case 'baselines_list': return [];
     case 'startup_list': return [{ name: 'Discord', command: 'C:\\Discord\\Update.exe', location: 'Current user', enabled: true, hive: 'HKCU', keyPath: 'Run' }, { name: 'OneDrive', command: 'OneDrive.exe', location: 'Current user', enabled: false, hive: 'HKCU', keyPath: 'Run' }];
@@ -67,7 +81,7 @@ async function mock(cmd, a) {
     case 'net_ping_all': for (const n of ['Cloudflare', 'Google', 'Quad9']) { emitMock('ping-row', { name: n, stats: { host: '1.1.1.1', sent: 10, received: 10, minMs: 8, avgMs: 11.2, maxMs: 17, jitterMs: 2.1, lossPercent: 0 } }); await sleep(300); } return [];
     case 'net_mtu': return 1472;
     case 'net_dns_bench': for (const n of ['Cloudflare', 'Google', 'Quad9']) { emitMock('dns-row', { name: n, primary: '1.1.1.1', secondary: '1.0.0.1', medianMs: 9 + Math.random() * 20, failures: 0 }); await sleep(300); } return [];
-    case 'net_dns_set': case 'net_dns_restore': return { success: true, message: 'DNS updated.', restart: 'none' };
+    case 'net_dns_set': needPrem('DNS switcher'); case 'net_dns_restore': return { success: true, message: 'DNS updated.', restart: 'none' };
     case 'net_adapters': return [{ name: 'Ethernet', guid: '{x}', description: 'Realtek 2.5GbE', speedMbps: 2500, dns: ['1.1.1.1'], addresses: ['192.168.1.5'] }];
     case 'games_list': return [{ name: 'Fortnite', exePath: 'C:\\Games\\Fortnite\\FortniteClient-Win64-Shipping.exe', profileId: null }];
     case 'games_epic': return [{ name: 'Rocket League', exePath: 'D:\\Epic\\RL\\RocketLeague.exe' }];

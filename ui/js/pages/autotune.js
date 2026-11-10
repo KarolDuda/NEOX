@@ -1,6 +1,6 @@
 import { call, on } from '../api.js';
-import { h, page, toast, confirmBox, busy, skeleton } from '../ui.js';
-import { S, refreshInfo } from '../state.js';
+import { h, page, toast, confirmBox, busy, skeleton, lockButton } from '../ui.js';
+import { S, refreshInfo, refreshLicense } from '../state.js';
 
 export default async function autotune({ go }) {
   const root = h('div', { class: 'stack' }, skeleton(3, 70));
@@ -8,6 +8,7 @@ export default async function autotune({ go }) {
   const status = h('div', { class: 'muted small mono' });
   await on('progress', m => { if (document.body.contains(status)) status.textContent = m; });
 
+  await refreshLicense();
   const view = await call('autotune_plan');
   const plan = view.plan; const chosen = new Set(plan.planned.map(p => p.id));
   const bench = h('input', { type: 'checkbox', checked: true, id: 'bench' });
@@ -45,7 +46,7 @@ export default async function autotune({ go }) {
     h('h3', { class: 'h2' }, `Planned (${plan.planned.length})`), plan.planned.length ? list : h('div', { class: 'empty' }, 'Everything suitable is already applied.'),
     skipped,
     h('label', { class: 'row' }, bench, h('span', {}, 'Measure before and after (takes about a minute)')),
-    h('div', { class: 'row' }, run, status), results);
+    h('div', { class: 'row' }, S.lic.premium ? run : [lockButton(go, 'Auto-Tune is Premium'), h('span', { class: 'small muted' }, 'You can preview the plan for free.')], status), results);
   return wrap;
 }
 const fmt = n => n >= 1000 ? Math.round(n).toLocaleString() : n.toFixed(2);
