@@ -283,9 +283,9 @@ async fn baseline_compare(c: S<'_>, index: usize) -> Result<Vec<DiffRow>, String
     blocking(move || {
         c.need("Baselines")?;
         let Some(b) = c.store.read(|s| s.baselines.get(index).cloned()) else { return Ok(vec![]) };
-        c.profiles().compare(&b, &tctx(None)).into_iter()
-            .map(|(id, before, now)| DiffRow { title: c.engine.catalog().find(&id).map(|t| t.title.clone()).unwrap_or_else(|| id.clone()), id, before, now }).collect()
-    }).await
+        Ok(c.profiles().compare(&b, &tctx(None)).into_iter()
+            .map(|(id, before, now)| DiffRow { title: c.engine.catalog().find(&id).map(|t| t.title.clone()).unwrap_or_else(|| id.clone()), id, before, now }).collect())
+    }).await?
 }
 
 // ------------------------------------------------------------------ Auto-Tune + health
