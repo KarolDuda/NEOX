@@ -6318,6 +6318,119 @@
         }
       ],
       "section": "mouse"
+    },
+    {
+      "id": "qos_game_dscp",
+      "category": "network",
+      "title": "Game traffic priority (QoS / DSCP 46)",
+      "description": "Marks the network packets of popular online games (Fortnite, Valorant, CS2, Apex, Rocket League, Overwatch, Call of Duty, League) as high priority (DSCP 46 / Expedited Forwarding). A router with QoS or gaming mode puts those packets first, so a download or stream on the same connection does not raise your ping. Also lets Windows apply the marking on home networks. Routers that ignore DSCP see no change.",
+      "consequences": "No effect on speed. Helps only if your router honors DSCP markings. Adds Windows QoS policies named \"NEOX QoS ...\" and one registry value; undo removes them.",
+      "kind": "cmd",
+      "risk": "caution",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "hardwareDependent",
+      "cmd": {
+        "on": [
+          [
+            "powershell",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "foreach($a in 'FortniteClient-Win64-Shipping.exe','VALORANT-Win64-Shipping.exe','cs2.exe','r5apex.exe','RocketLeague.exe','Overwatch.exe','cod.exe','LeagueClient.exe','League of Legends.exe'){ Remove-NetQosPolicy -Name ('NEOX QoS '+$a) -Confirm:$false -ErrorAction SilentlyContinue; New-NetQosPolicy -Name ('NEOX QoS '+$a) -AppPathNameMatchCondition $a -DSCPAction 46 -NetworkProfile All -ErrorAction Stop | Out-Null }"
+          ],
+          [
+            "reg",
+            "add",
+            "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\QoS",
+            "/v",
+            "Do not use NLA",
+            "/t",
+            "REG_SZ",
+            "/d",
+            "1",
+            "/f"
+          ]
+        ],
+        "off": [
+          [
+            "powershell",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            "Get-NetQosPolicy -Name 'NEOX QoS *' -ErrorAction SilentlyContinue | Remove-NetQosPolicy -Confirm:$false"
+          ],
+          [
+            "reg",
+            "delete",
+            "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\QoS",
+            "/v",
+            "Do not use NLA",
+            "/f"
+          ]
+        ],
+        "hasCheck": true,
+        "check": {
+          "ps": "(@(Get-NetQosPolicy -Name 'NEOX QoS *' -ErrorAction SilentlyContinue).Count -gt 0)",
+          "equalsFalse": false
+        }
+      }
+    },
+    {
+      "id": "bufferbloat_low",
+      "category": "network",
+      "title": "Bufferbloat preset: low latency",
+      "description": "Limits how much data Windows lets arrive before it is acknowledged (restricted receive auto-tuning). When someone downloads or streams on the same line, fewer packets queue up in front of your game traffic, so ping stays steadier. Best used together with QoS on a slow or shared connection.",
+      "consequences": "Single-connection downloads on very fast lines (above roughly 300 Mbit/s) can be slower. Undo, or the Repair my internet button, restores the Windows default (normal). Not used by any profile.",
+      "kind": "cmd",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "hardwareDependent",
+      "cmd": {
+        "on": [
+          [
+            "netsh",
+            "int",
+            "tcp",
+            "set",
+            "global",
+            "autotuninglevel=restricted"
+          ]
+        ],
+        "off": [
+          [
+            "netsh",
+            "int",
+            "tcp",
+            "set",
+            "global",
+            "autotuninglevel=normal"
+          ]
+        ],
+        "hasCheck": false
+      }
+    },
+    {
+      "id": "gpu_preemption_off",
+      "category": "performance",
+      "title": "GPU: turn off scheduler preemption",
+      "description": "Lets the GPU finish the frame it is working on without Windows interrupting it for other work. Can reduce frame-time spikes on a dedicated gaming PC.",
+      "consequences": "Can make the desktop or a second monitor feel less smooth while a game is busy, and in rare cases causes graphics driver hangs. Needs a restart. Reversible. Not used by any profile.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers\\Scheduler",
+          "name": "DisablePreemption",
+          "type": "dword",
+          "value": 1
+        }
+      ]
     }
   ]
 }

@@ -12,7 +12,7 @@ use serde::Serialize;
 /// warning, but no profile and no Auto-Tune ever applies them.
 pub const NET_UNSAFE: &[&str] = &[
     "net_connectivity_probe_off", "tcp_offload_off", "dns_negcache", "netbios_off", "ipv4_pref", "tcp_heuristics_off", "tcp_timestamps_off",
-    "teredo_off", "svc_wsaif",
+    "teredo_off", "svc_wsaif", "bufferbloat_low",
 ];
 
 /// Items that help any connection.

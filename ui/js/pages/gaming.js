@@ -6,12 +6,12 @@ export default async function gaming({ go }) {
   await refreshLicense();
   const P = S.lic.premium;
   const body = h('div', { class: 'stack' }, skeleton(4, 90));
-  const wrap = page('Gaming & profiles', 'Profiles are sets of tweaks. Game Boost switches to a performance power plan only while a game from your list runs, then restores yours.', body);
+  const wrap = page('Gaming & profiles', 'Profiles are sets of tweaks. Game Boost switches to a performance power plan, raises the priority of the game and pauses background services (Windows Update, indexing, telemetry, update sharing) only while a game from your list runs, then restores everything.', body);
   const [profiles, games, boost, epic, fn] = await Promise.all([call('profiles_list'), call('games_list'), call('gameboost_get'), call('games_epic'), call('fortnite_info')]);
 
   const boostStatus = h('div', { class: 'small muted' }, boost.status);
   const boostSw = !P ? lockButton(go) : switchEl(boost.enabled, async s => { const on = !s.classList.contains('on'); const r = await call('gameboost_set', { enabled: on }); s.set(r.enabled); boostStatus.textContent = r.status; });
-  const boostCard = h('div', { class: 'card hover row' }, h('div', { class: 'grow' }, h('div', { class: 'h2' }, 'Game Boost ', P ? null : premiumBadge()), h('div', { class: 'muted' }, 'Active only while a listed game is running; your original power plan is restored afterwards, even after a crash.'), boostStatus), boostSw);
+  const boostCard = h('div', { class: 'card hover row' }, h('div', { class: 'grow' }, h('div', { class: 'h2' }, 'Game Boost ', P ? null : premiumBadge()), h('div', { class: 'muted' }, 'Active only while a listed game is running: performance power plan, High priority and background services paused. Your power plan and services are restored afterwards, even after a crash.'), boostStatus), boostSw);
 
   const profCards = profiles.map(p => h('div', { class: 'card hover', style: p.id === 'builtin.max' ? { borderColor: 'var(--border-hi)' } : null }, h('div', { class: 'row' }, h('div', { class: 'grow' }, h('div', { class: 'h2' }, p.name), h('div', { class: 'muted small' }, p.description + ` · ${p.tweakIds.length} tweaks`)),
     !P ? lockButton(go) : h('button', { class: 'btn sm primary', onclick: async e => busy(e.target, async () => {

@@ -105,7 +105,11 @@ pub fn fortnite_restore_file(run: &dyn Runner, ini: &Path) -> Result<String, Str
 
 const HIGH_PERFORMANCE: &str = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
 
-/// While a game from your list runs: high-performance power plan + higher process priority; afterwards the previous
+/// Background services that compete with a running game for disk, CPU and bandwidth (update downloads, indexing,
+/// telemetry, update sharing). Only the ones that are running are stopped, and they are started again afterwards.
+const GAME_STOP_SERVICES: &[&str] = &["wuauserv", "BITS", "DoSvc", "SysMain", "WSearch", "DiagTrack"];
+
+/// While a game from your list runs: high-performance power plan + higher process priority + background services (updates, indexing, telemetry) paused; afterwards the previous
 /// plan is restored. The previous plan is stored in `state.json`, so it is recovered even after a crash.
 pub struct GameBoost { store: Arc<StateStore>, run: Arc<dyn Runner>, boosted_pid: Mutex<u32>, status: Mutex<String> }
 
@@ -133,7 +137,7 @@ impl GameBoost {
         let boosted = *self.boosted_pid.lock().unwrap_or_else(|e| e.into_inner());
         match game {
             Some(g) => if boosted != g.pid { self.boost(g.pid, &g.name); },
-            None => if boosted != 0 || self.store.read(|s| s.settings.game_boost_restore_scheme.is_some()) {
+            None => if boosted != 0 || self.store.read(|s| s.settings.game_boost_restore_scheme.is_some() || !s.settings.game_boost_stopped_services.is_empty()) {
                 self.restore();
                 self.set_status("Waiting for a game to start");
             },
@@ -157,12 +161,38 @@ impl GameBoost {
             }
         }
         self.run.run(&powershell(&format!("(Get-Process -Id {pid} -ErrorAction Stop).PriorityClass = 'High'")), 30);
+        self.pause_services();
         *self.boosted_pid.lock().unwrap_or_else(|e| e.into_inner()) = pid;
         self.set_status(&format!("Active: {name}"));
     }
 
+    /// Stops the running background services from `GAME_STOP_SERVICES`. The list is saved BEFORE stopping so a crash cannot lose it.
+    fn pause_services(&self) {
+        if self.store.read(|s| !s.settings.game_boost_stopped_services.is_empty()) { return; }
+        let names = GAME_STOP_SERVICES.iter().map(|n| format!("'{n}'")).collect::<Vec<_>>().join(",");
+        let r = self.run.run(&powershell(&format!("Get-Service -Name {names} -ErrorAction SilentlyContinue | Where-Object {{ $_.Status -eq 'Running' }} | ForEach-Object {{ $_.Name }}")), 30);
+        if !r.success() { return; }
+        let running: Vec<String> = r.output.lines().map(|l| l.trim().to_string()).filter(|l| GAME_STOP_SERVICES.contains(&l.as_str())).collect();
+        if running.is_empty() { return; }
+        self.store.write(|s| s.settings.game_boost_stopped_services = running.clone());
+        let _ = self.store.save();
+        for n in &running { self.run.run(&powershell(&format!("Stop-Service -Name '{n}' -Force -ErrorAction SilentlyContinue")), 40); }
+    }
+
+    fn resume_services(&self) {
+        let list = self.store.read(|s| s.settings.game_boost_stopped_services.clone());
+        for n in list.iter().filter(|n| GAME_STOP_SERVICES.contains(&n.as_str())) {
+            self.run.run(&powershell(&format!("Start-Service -Name '{n}' -ErrorAction SilentlyContinue")), 40);
+        }
+        if !list.is_empty() {
+            self.store.write(|s| s.settings.game_boost_stopped_services.clear());
+            let _ = self.store.save();
+        }
+    }
+
     pub fn restore(&self) {
         *self.boosted_pid.lock().unwrap_or_else(|e| e.into_inner()) = 0;
+        self.resume_services();
         let Some(prev) = self.store.read(|s| s.settings.game_boost_restore_scheme.clone()) else { return };
         self.run.run(&argv(&["powercfg", "/setactive", &prev]), 30);
         self.store.write(|s| s.settings.game_boost_restore_scheme = None);
@@ -211,6 +241,22 @@ mod tests {
         g.tick();
         assert!(run.calls().iter().any(|c| c == "powercfg /setactive 11111111-2222-3333-4444-555555555555"));
         assert!(store.read(|s| s.settings.game_boost_restore_scheme.is_none()));
+    }
+
+    #[test]
+    fn pauses_running_background_services_during_a_game_and_starts_them_again() {
+        let (g, run, store) = boost("\"Game.exe\",\"4242\",\"Console\",\"1\",\"500 000 K\"");
+        run.on("powershell -NoProfile -NonInteractive -Command Get-Service", RunResult::ok("wuauserv\r\nSysMain\r\nNotOurs\r\n"));
+        g.tick();
+        assert_eq!(store.read(|s| s.settings.game_boost_stopped_services.clone()), vec!["wuauserv".to_string(), "SysMain".to_string()]);
+        assert!(run.calls().iter().any(|c| c.contains("Stop-Service -Name 'wuauserv'")));
+        assert!(!run.calls().iter().any(|c| c.contains("NotOurs")));
+
+        run.rules.lock().unwrap().retain(|(p, _)| p != "tasklist");
+        run.on("tasklist", RunResult::ok(""));
+        g.tick();
+        assert!(run.calls().iter().any(|c| c.contains("Start-Service -Name 'SysMain'")));
+        assert!(store.read(|s| s.settings.game_boost_stopped_services.is_empty()));
     }
 
     #[test]

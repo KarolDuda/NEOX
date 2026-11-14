@@ -71,12 +71,14 @@ pub struct AppSettings {
     pub game_boost: bool,
     /// Power scheme GUID to restore after a game (persisted so it survives a crash).
     pub game_boost_restore_scheme: Option<String>,
+    /// Background services Game Boost stopped for the running game (persisted so they are started again even after a crash).
+    pub game_boost_stopped_services: Vec<String>,
     pub last_auto_tune: Option<String>,
 }
 impl Default for AppSettings {
     fn default() -> Self {
         Self { create_restore_point_before_profiles: true, auto_update: true, game_exe_path: None, first_run_done: false,
-               game_boost: false, game_boost_restore_scheme: None, last_auto_tune: None }
+               game_boost: false, game_boost_restore_scheme: None, game_boost_stopped_services: Vec::new(), last_auto_tune: None }
     }
 }
 
