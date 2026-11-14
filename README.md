@@ -5,7 +5,7 @@
 NEOX tunes Windows 10/11 for gaming. Hundreds of documented tweaks with their benefits and side effects, profiles, undo for every change, network tools, a Keyboard and a Mouse page, Auto-Tune, monitoring and cleanup.
 
 ## Download
-Builds are published by GitHub Actions from the `recode` branch: open the [Releases page](https://github.com/KarolDuda/NEOX/releases) and download `Neox_Setup.exe` from the newest **NEOX RECODE preview**. The installer is not code-signed, so SmartScreen may warn you (More info, then Run anyway). Each release lists the SHA-256 of the files and a build attestation you can verify with `gh attestation verify Neox_Setup.exe --repo KarolDuda/NEOX`.
+Builds are published by GitHub Actions from the `recode` branch: open the [latest release](https://github.com/KarolDuda/NEOX/releases/latest) and download `Neox_Setup.exe`. Installed copies update themselves: Settings, Check for updates, Install. The installer is not code-signed, so SmartScreen may warn you (More info, then Run anyway). Each release lists the SHA-256 of the files and a build attestation you can verify with `gh attestation verify Neox_Setup.exe --repo KarolDuda/NEOX`.
 
 ## Free and Premium
 - **Free**: a set of safe optimizations, the basics on the Keyboard and Mouse pages, network repair, the DNS switcher, undo, history, restore point and the disk analyzer.

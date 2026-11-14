@@ -48,7 +48,7 @@ jobs:
           $h = (Get-FileHash installer\output\Neox_Setup.exe -Algorithm SHA256).Hash
           $e = (Get-FileHash publish\Neox.exe -Algorithm SHA256).Hash
           @"
-          Preview of the Rust + Tauri rewrite. Download Neox_Setup.exe and run it.
+          NEOX 3.1.${{ github.run_number }} (Rust + Tauri). Download Neox_Setup.exe and run it. Installed copies update themselves from Settings, Check for updates.
 
           The installer is not code-signed, so SmartScreen / Smart App Control may warn you. It is built by GitHub Actions from this repository's source; verify it with ``gh attestation verify Neox_Setup.exe --repo KarolDuda/NEOX``.
 
@@ -61,11 +61,13 @@ jobs:
         with:
           subject-path: installer/output/Neox_Setup.exe
 
-      - name: Publish as a pre-release
+      - name: Publish the release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: recode-${{ github.run_number }}
-          name: NEOX RECODE preview (build ${{ github.run_number }})
-          prerelease: true
+          # The in-app updater reads the version from the tag, so it must look like v3.1.N.
+          tag_name: v3.1.${{ github.run_number }}
+          name: NEOX 3.1.${{ github.run_number }}
+          prerelease: false
+          make_latest: true
           files: installer/output/Neox_Setup.exe
           body_path: release-notes.md

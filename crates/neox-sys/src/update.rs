@@ -53,15 +53,30 @@ pub fn evaluate(json: &str, current: &str) -> (Option<UpdateInfo>, String) {
     } else { (None, format!("You have the latest version ({}).", fmt(cur))) }
 }
 
+/// Picks the newest published (not draft, not pre-release) release that has the installer from a list of releases.
+/// GitHub's "latest" endpoint is not used: it can point at an unrelated, older release line.
+pub fn evaluate_list(json: &str, current: &str) -> (Option<UpdateInfo>, String) {
+    let Ok(Value::Array(list)) = serde_json::from_str::<Value>(json) else { return evaluate(json, current) };
+    let has_installer = |r: &Value| r["assets"].as_array().is_some_and(|a| a.iter().any(|x| x["name"].as_str().is_some_and(|n| n.eq_ignore_ascii_case(ASSET_NAME))));
+    let best = list.iter()
+        .filter(|r| !r["draft"].as_bool().unwrap_or(false) && !r["prerelease"].as_bool().unwrap_or(false) && has_installer(r))
+        .filter_map(|r| parse_version(r["tag_name"].as_str()?).map(|v| (v, r)))
+        .max_by_key(|(v, _)| *v);
+    match best {
+        Some((_, r)) => evaluate(&r.to_string(), current),
+        None => (None, "No published release was found.".into()),
+    }
+}
+
 pub fn check(run: &dyn Runner) -> (Option<UpdateInfo>, String) {
     let script = format!("[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; \
-try {{ (Invoke-WebRequest -UseBasicParsing -Uri 'https://api.github.com/repos/{OWNER}/{REPO}/releases/latest' \
+try {{ (Invoke-WebRequest -UseBasicParsing -Uri 'https://api.github.com/repos/{OWNER}/{REPO}/releases?per_page=30' \
 -Headers @{{'User-Agent'='Neox-Updater';'Accept'='application/vnd.github+json'}} -TimeoutSec 20).Content }} \
 catch {{ if($_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 404){{'NOTFOUND'}} else {{ exit 3 }} }}");
     let r = run.run(&powershell(&script), 40);
     if r.output.trim() == "NOTFOUND" { return (None, "Cannot check for updates: the repository is private or has no release yet.".into()); }
     if !r.success() { return (None, "Cannot reach the update server.".into()); }
-    evaluate(&r.output, current_version())
+    evaluate_list(&r.output, current_version())
 }
 
 /// Downloads the installer to a temp file; `progress` receives 0.0..=1.0 (polled from the file size). Verifies the size.
@@ -142,6 +157,18 @@ mod tests {
         assert!(evaluate(r#"{"tag_name":"v9.0.0","assets":[]}"#, "1.0.0").1.contains("installer"));
         assert!(evaluate("{nope", "1.0.0").0.is_none());
         assert!(evaluate(r#"{"tag_name":"nightly","assets":[]}"#, "1.0.0").1.contains("Unknown"));
+    }
+
+    #[test]
+    fn picks_the_newest_published_release_and_skips_prereleases_and_drafts() {
+        let rel = |t: &str, pre: bool, draft: bool| format!(r#"{{"tag_name":"{t}","name":"NEOX {t}","prerelease":{pre},"draft":{draft},"assets":[{{"name":"Neox_Setup.exe","size":1,"browser_download_url":"https://github.com/KarolDuda/NEOX/releases/download/{t}/Neox_Setup.exe"}}]}}"#);
+        let list = format!("[{},{},{},{},{}]", rel("v3.0.18", false, false), rel("v3.1.16", false, false), rel("v3.1.99", true, false), rel("v3.2.0", false, true), rel("recode-15", true, false));
+        let (u, _) = evaluate_list(&list, "3.1.15");
+        assert_eq!(u.unwrap().version, "3.1.16");
+        assert!(evaluate_list(&list, "3.1.16").0.is_none());
+        assert!(evaluate_list("[]", "1.0.0").0.is_none());
+        // a single release object still works
+        assert!(evaluate_list(&rel("v3.1.16", false, false), "3.1.15").0.is_some());
     }
 
     #[test]
