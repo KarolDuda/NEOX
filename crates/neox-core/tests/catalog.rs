@@ -4,9 +4,9 @@ use neox_core::models::*;
 fn cat() -> Catalog { Catalog::load_embedded().expect("catalog loads") }
 
 #[test]
-fn loads_all_283_items_with_unique_ids() {
+fn loads_all_292_items_with_unique_ids() {
     let c = cat();
-    assert_eq!(c.len(), 283);
+    assert_eq!(c.len(), 292);
 }
 
 #[test]
@@ -140,5 +140,27 @@ fn internet_slowing_items_are_not_marked_recommended() {
     for id in neox_core::nettune::NET_UNSAFE {
         let t = c.find(id).unwrap();
         assert!(!matches!(t.risk, RiskLevel::Recommended), "{id}");
+    }
+}
+
+#[test]
+fn new_hidden_keyboard_and_mouse_items_exist_and_stay_out_of_profiles() {
+    let c = cat();
+    let ids = ["kb_hwkb_autocorrect_off", "kb_emoji_hotkey_off", "kb_touchkb_assist_off", "kb_alt_tab_classic", "kb_a11y_hotkeys_off", "mouse_touchpad_sensitive", "mouse_drag_threshold"];
+    for id in ids {
+        let t = c.find(id).unwrap_or_else(|| panic!("{id}"));
+        assert!(t.section.is_some(), "{id}");
+        assert!(!neox_core::license::is_free(id), "{id}");
+    }
+    for p in neox_core::profiles::built_in(&c) { for id in ids { assert!(!p.tweak_ids.iter().any(|x| x == id), "{id} in {}", p.name); } }
+}
+
+#[test]
+fn latency_network_items_are_available_but_marked_with_a_warning() {
+    let c = cat();
+    for id in ["nic_im_off", "nic_lso_off", "tcp_rsc_off", "nic_green_off"] {
+        let t = c.find(id).unwrap();
+        assert!(matches!(t.risk, RiskLevel::Caution), "{id}");
+        assert!(t.consequences.chars().count() > 20, "{id}");
     }
 }

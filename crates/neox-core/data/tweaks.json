@@ -2819,13 +2819,13 @@
       "id": "nic_im_off",
       "category": "network",
       "title": "NIC: disable interrupt moderation",
-      "description": "The adapter reports packets immediately instead of batching them: lower latency at the cost of a little CPU. Briefly interrupts the connection (adapter restart).",
+      "description": "The network card passes each packet to Windows immediately instead of batching them. This is one of the few adapter settings that lowers ping and jitter in online games. Briefly interrupts the connection (adapter restart).",
       "kind": "nic",
-      "risk": "experimental",
+      "risk": "caution",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "hardwareDependent",
-      "consequences": "More interrupts: higher CPU use and lower throughput on gigabit and faster links on some adapters. The adapter restarts briefly.",
+      "consequences": "Slightly more CPU use while downloading at full speed. On a modern PC you will not notice it. Reversible; the adapter restarts for a moment.",
       "nic": {
         "keywords": [
           "*InterruptModeration"
@@ -2873,13 +2873,13 @@
       "id": "nic_lso_off",
       "category": "network",
       "title": "NIC: disable Large Send Offload",
-      "description": "The CPU segments packets instead of the adapter; can be more stable in games. Briefly interrupts the connection (adapter restart).",
+      "description": "The CPU sends packets one by one instead of the card cutting large chunks apart. Online games send small packets, so this mostly smooths upload bursts. Briefly interrupts the connection (adapter restart).",
       "kind": "nic",
-      "risk": "experimental",
+      "risk": "caution",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "small",
-      "consequences": "The CPU segments packets, which can lower upload throughput and raise CPU use. The adapter restarts briefly.",
+      "consequences": "A little more CPU use during big uploads. Game traffic is unaffected in speed. Reversible; the adapter restarts for a moment.",
       "nic": {
         "keywords": [
           "*LsoV2IPv4",
@@ -3003,13 +3003,13 @@
       "id": "tcp_rsc_off",
       "category": "network",
       "title": "TCP: disable Receive Segment Coalescing",
-      "description": "Packets are not merged before being passed to the system, which lowers latency at the cost of CPU.",
+      "description": "Windows hands each received packet to the game right away instead of merging several into one first. Merging saves CPU but adds a small delay, so turning it off lowers latency.",
       "kind": "cmd",
-      "risk": "experimental",
+      "risk": "caution",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "hardwareDependent",
-      "consequences": "Higher CPU use at high download speeds and possibly lower throughput. Revert if downloads got slower.",
+      "consequences": "A little more CPU use at very high download speeds (gigabit). Normal downloads and games are not slower. Reversible.",
       "cmd": {
         "on": [
           [
@@ -6065,6 +6065,256 @@
           "name": "CpuPriorityClass",
           "type": "dword",
           "value": 4
+        }
+      ],
+      "section": "mouse"
+    },
+    {
+      "id": "nic_green_off",
+      "category": "network",
+      "title": "NIC: turn off hidden power-saving modes",
+      "description": "Many Ethernet drivers (Realtek, Intel) hide extra power-saving options such as Green Ethernet, Power Saving Mode, Gigabit Lite, Advanced EEE and Ultra Low Power Mode. When the link wakes from them it can add ping spikes. Only the options your adapter really has are changed. Briefly interrupts the connection (adapter restart).",
+      "consequences": "Slightly higher power draw of the network card, especially on laptops. Options your adapter does not have are skipped. Reversible; the adapter restarts for a moment.",
+      "kind": "nic",
+      "risk": "caution",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "hardwareDependent",
+      "nic": {
+        "keywords": [
+          "GreenEthernet",
+          "EnableGreenEthernet",
+          "PowerSavingMode",
+          "AutoPowerSaveModeEnabled",
+          "ULPMode",
+          "AdvancedEEE",
+          "EEELinkAdvertisement",
+          "GigaLite",
+          "AutoDisableGigabit"
+        ],
+        "value": "0"
+      }
+    },
+    {
+      "id": "udp_fastsend",
+      "category": "network",
+      "title": "UDP fast path for game packets",
+      "description": "Online games send small UDP datagrams. Windows only sends datagrams up to 1024 bytes through its fast path; this raises the limit to 1500 bytes (one full network packet) so game traffic is not buffered.",
+      "consequences": "No downside known; the effect is small and only affects UDP traffic. Needs a restart. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Services\\AFD\\Parameters",
+          "name": "FastSendDatagramThreshold",
+          "type": "dword",
+          "value": 1500
+        }
+      ]
+    },
+    {
+      "id": "kb_hwkb_autocorrect_off",
+      "category": "appearance",
+      "title": "Hardware keyboard: no autocorrect or text suggestions",
+      "description": "Windows 10/11 has a separate, hidden autocorrect and text-prediction engine for physical keyboards that runs in every app, even though the normal typing settings look off. Turns both off, so text appears exactly as you type it.",
+      "consequences": "Windows no longer fixes typos or suggests words while you type on a physical keyboard. Reversible.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Input\\Settings",
+          "name": "EnableHwkbAutocorrection",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Input\\Settings",
+          "name": "EnableHwkbTextPrediction",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_emoji_hotkey_off",
+      "category": "appearance",
+      "title": "Turn off the emoji panel shortcut (Win+. and Win+;)",
+      "description": "Stops the emoji and symbol panel from opening when you press Win+period or Win+semicolon by accident, which pulls focus out of a game.",
+      "consequences": "Win+. and Win+; no longer open the emoji panel. Reversible.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Input\\Settings",
+          "name": "EnableExpressiveInputShellHotkey",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_touchkb_assist_off",
+      "category": "appearance",
+      "title": "Touch keyboard: no autocorrect, spell check or double-space period",
+      "description": "Turns off the hidden helpers of the touch keyboard and handwriting panel (autocorrect, spell checking, text prediction, double-space period). Less background text processing and no surprise edits.",
+      "consequences": "Only affects the on-screen touch keyboard. Reversible.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\TabletTip\\1.7",
+          "name": "EnableAutocorrection",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\TabletTip\\1.7",
+          "name": "EnableSpellchecking",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\TabletTip\\1.7",
+          "name": "EnableTextPrediction",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\TabletTip\\1.7",
+          "name": "EnableDoubleTapSpace",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_alt_tab_classic",
+      "category": "appearance",
+      "title": "Classic, instant Alt+Tab",
+      "description": "Brings back the old Alt+Tab switcher: no full-screen dim and no animation, so switching out of and back into a game is quicker and lighter on the GPU.",
+      "consequences": "Alt+Tab looks like the Windows 7 style. Reversible; sign out and in to apply.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+          "name": "AltTabSettings",
+          "type": "dword",
+          "value": 1
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_a11y_hotkeys_off",
+      "category": "appearance",
+      "title": "Turn off hidden accessibility hotkeys",
+      "description": "Disables three shortcuts that Windows leaves on and that can fire in the middle of a game: the High Contrast hotkey (Left Alt + Left Shift + Print Screen), the colour-filter hotkey (Win+Ctrl+C) and the Narrator start hotkey (Win+Ctrl+Enter). Sticky/Filter/Toggle Keys are handled by the separate item.",
+      "consequences": "Those three shortcuts stop working; the features can still be turned on in Settings. Reversible.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Accessibility\\HighContrast",
+          "name": "Flags",
+          "type": "string",
+          "value": "122"
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\ColorFiltering",
+          "name": "HotkeyEnabled",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Narrator\\NoRoam",
+          "name": "WinEnterLaunchEnabled",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "mouse_touchpad_sensitive",
+      "category": "appearance",
+      "title": "Touchpad: no palm-rejection delay",
+      "description": "Sets the Precision Touchpad sensitivity to the most sensitive level, so the touchpad reacts at once instead of waiting to tell a palm from a finger. For laptops.",
+      "consequences": "Your palm can move the pointer while you type. Only affects Precision Touchpads. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Windows\\CurrentVersion\\PrecisionTouchPad",
+          "name": "AAPThreshold",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "mouse"
+    },
+    {
+      "id": "mouse_drag_threshold",
+      "category": "appearance",
+      "title": "Instant drag detection",
+      "description": "Windows waits until the mouse has moved 4 pixels before it counts a click-and-hold as a drag. Lowering it to 2 makes dragging windows, files and selections start at once.",
+      "consequences": "A very slight shake of the hand while clicking can start a drag. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Desktop",
+          "name": "DragWidth",
+          "type": "string",
+          "value": "2"
+        },
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Desktop",
+          "name": "DragHeight",
+          "type": "string",
+          "value": "2"
         }
       ],
       "section": "mouse"

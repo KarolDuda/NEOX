@@ -370,11 +370,15 @@ impl TweakHandler for NicHandler {
 
     fn status(&self, t: &TweakDefinition, _: &TweakContext) -> Result<TweakStatus, String> {
         let nic = t.nic.as_ref().ok_or("Missing nic data")?;
+        // A keyword the adapter does not have is ignored; at least one must exist and all that exist must match.
+        let mut found = false;
         for kw in &nic.keywords {
             let vals = self.read(kw);
-            if vals.is_empty() || vals.iter().any(|(_, v)| *v != nic.value) { return Ok(TweakStatus::NotApplied); }
+            if vals.is_empty() { continue; }
+            found = true;
+            if vals.iter().any(|(_, v)| *v != nic.value) { return Ok(TweakStatus::NotApplied); }
         }
-        Ok(TweakStatus::Applied)
+        Ok(if found { TweakStatus::Applied } else { TweakStatus::NotApplied })
     }
 
     fn apply(&self, t: &TweakDefinition, _: &TweakContext) -> Result<Value, String> {

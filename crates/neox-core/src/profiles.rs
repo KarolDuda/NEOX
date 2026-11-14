@@ -88,7 +88,7 @@ pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
         Profile { id: "builtin.streaming".into(), built_in: true, name: "Gaming + streaming".into(),
             description: "Gaming tweaks that keep OBS, Discord and the browser smooth: no services touched, no boot changes, nothing that limits background apps you stream with.".into(),
             tweak_ids: ids(&|t| t.is_simple() && game_area(t) && net_ok(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)
-                && !matches!(t.id.as_str(), "bg_apps" | "bg_access_off" | "cpu_min" | "core_parking" | "ultimate_plan")) },
+                && !matches!(t.id.as_str(), "bg_apps" | "bg_access_off" | "cpu_min" | "core_parking" | "ultimate_plan" | "nic_im_off" | "nic_lso_off" | "tcp_rsc_off")) },
         Profile { id: "builtin.laptop".into(), built_in: true, name: "Laptop (battery friendly)".into(),
             description: "Only low-risk items that do not raise power draw: no forced maximum CPU state, no disabled power saving.".into(),
             tweak_ids: ids(&|t| t.is_simple() && game_area(t) && t.risk == RiskLevel::Recommended && !LAPTOP_UNSAFE.contains(&t.id.as_str())) },
