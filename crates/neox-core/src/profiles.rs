@@ -61,13 +61,17 @@ fn is_profile_safe(t: &TweakDefinition) -> bool {
 /// or (platform_tick) forces the slow platform clock, which adds timer overhead and can raise latency on current Windows.
 const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey", "platform_tick", "mouse_queue_small", "csrss_priority", "mouse_curve_flat", "gpu_preemption_off"];
 
+/// Alternatives to an item that profiles already include (same registry value with a different number, or a second power plan).
+/// Two of them in one profile would fight over the same setting, so profiles skip these; apply them by hand if you prefer them.
+const PROFILE_ALTERNATIVES: &[&str] = &["ultimate_plan", "ui_priority_boost"];
+
 /// Raise power draw or disable power saving; kept out of the laptop profile.
 const LAPTOP_UNSAFE: &[&str] = &["cpu_min", "core_parking", "boost_mode", "usb_suspend", "usb_reg", "pcie_aspm", "power_throttle", "cpu_epp", "cpu_idle_off", "wlan_perf", "ultimate_plan", "disk_idle", "usb3_lpm_off"];
 
 pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
     let net_ok = |t: &TweakDefinition| !crate::nettune::NET_UNSAFE.contains(&t.id.as_str());
     let game_area = |t: &TweakDefinition| matches!(t.category, TweakCategory::Performance | TweakCategory::Input | TweakCategory::Network);
-    let ids = |f: &dyn Fn(&TweakDefinition) -> bool| catalog.all().iter().filter(|t| f(t)).map(|t| t.id.clone()).collect::<Vec<_>>();
+    let ids = |f: &dyn Fn(&TweakDefinition) -> bool| catalog.all().iter().filter(|t| !PROFILE_ALTERNATIVES.contains(&t.id.as_str()) && f(t)).map(|t| t.id.clone()).collect::<Vec<_>>();
     vec![
         Profile { id: "builtin.safe".into(), built_in: true, name: "Safe start".into(),
             description: "Only items marked as recommended for performance, input delay and network. No services or tasks.".into(),
@@ -196,6 +200,26 @@ mod tests {
                     assert!(!matches!(t.kind, TweakKind::Bcd), "{id}");
                 }
                 assert!(!matches!(t.kind, TweakKind::Service | TweakKind::Task), "{id}");
+            }
+        }
+    }
+
+    #[test]
+    fn no_profile_applies_two_different_values_to_the_same_setting() {
+        use std::collections::HashMap;
+        let c = cat();
+        for p in built_in(&c) {
+            let mut seen: HashMap<String, (String, String)> = HashMap::new();
+            for id in &p.tweak_ids {
+                let t = c.find(id).unwrap();
+                let mut keys: Vec<(String, String)> = Vec::new();
+                for v in t.values.iter().flatten() { keys.push((format!("{}|{}|{}", v.hive, v.path.to_lowercase(), v.name.clone().unwrap_or_default().to_lowercase()), v.value.to_string())); }
+                if let Some(pw) = &t.power { keys.push((format!("power|{}|{}", pw.subgroup, pw.setting), pw.value.to_string())); }
+                if t.kind == TweakKind::PowerPlan { keys.push(("power-plan".into(), id.clone())); }
+                for (k, val) in keys {
+                    if let Some((other, oval)) = seen.get(&k) { assert!(*oval == val, "{}: {} and {} set {} differently", p.name, other, id, k); }
+                    seen.insert(k, (id.clone(), val));
+                }
             }
         }
     }
