@@ -5445,9 +5445,9 @@
     {
       "id": "mouse_queue_small",
       "category": "input",
-      "title": "Smaller mouse and keyboard input queues",
-      "description": "Reduces the driver data queue from 100 to 20 events, so input is handed to the game with less buffering. A small but measurable latency effect on busy systems.",
-      "consequences": "Very fast input bursts can overflow the queue on a heavily loaded PC. Reversible.",
+      "title": "Smaller mouse and keyboard input queues (contested)",
+      "description": "Lowers the driver data queue from 100 to 20 events. Community tests disagree on whether this changes anything you can measure, and it is a sensible choice only on a fast PC. Kept as an optional experiment; it is not part of any profile.",
+      "consequences": "Little or no measurable gain on most PCs. Very fast input bursts (macros, 8 kHz mice) can overflow the queue on a loaded system and drop events. Needs a restart. Reversible.",
       "kind": "reg",
       "risk": "experimental",
       "requiresAdmin": true,
@@ -6016,6 +6016,58 @@
           "value": 0
         }
       ]
+    },
+    {
+      "id": "mouse_curve_flat",
+      "category": "input",
+      "title": "Exact 1:1 mouse curve (100% scaling)",
+      "description": "Writes a perfectly linear pointer curve (SmoothMouseXCurve/YCurve) so no leftover acceleration data remains, even if Windows or a driver re-enables Enhance pointer precision. Made for 100% display scaling.",
+      "consequences": "On displays with scaling other than 100% the pointer can feel slightly faster or slower. Changes the pointer curve only; the previous curve is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Mouse",
+          "name": "SmoothMouseXCurve",
+          "type": "binary",
+          "value": "0000000000000000C0CC0C0000000000809919000000000040662600000000000033330000000000"
+        },
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Mouse",
+          "name": "SmoothMouseYCurve",
+          "type": "binary",
+          "value": "0000000000000000000038000000000000007000000000000000A800000000000000E00000000000"
+        }
+      ],
+      "post": "refreshMouse",
+      "section": "mouse"
+    },
+    {
+      "id": "csrss_priority",
+      "category": "input",
+      "title": "High priority for the input process (csrss)",
+      "description": "Runs csrss.exe, the Windows process that routes mouse and keyboard input to your game, at High CPU priority. Helps input stay responsive when the CPU is fully loaded.",
+      "consequences": "WARNING: raises the priority of a core system process. Safe on normal PCs, but if the system feels unresponsive after a restart, undo it from History. Needs a restart.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "hardwareDependent",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\csrss.exe\\PerfOptions",
+          "name": "CpuPriorityClass",
+          "type": "dword",
+          "value": 4
+        }
+      ],
+      "section": "mouse"
     }
   ]
 }

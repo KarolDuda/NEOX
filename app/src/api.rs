@@ -714,7 +714,7 @@ async fn nettune_plan(c: S<'_>) -> Result<NetPlanView, String> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct NetTuneReport { apply: ProfileApplyReport, applied_ids: Vec<String>, deltas: Vec<MetricDelta> }
+struct NetTuneReport { apply: ProfileApplyReport, applied_ids: Vec<String>, deltas: Vec<MetricDelta>, reverted: bool }
 
 fn ping_summary(c: &Ctx, say: &dyn Fn(&str)) -> (f64, f64, f64) {
     let (mut avg, mut jit, mut loss, mut n) = (0.0, 0.0, 0.0, 0.0);
@@ -748,7 +748,17 @@ async fn nettune_run(c: S<'_>, app: tauri::AppHandle, ids: Vec<String>, measure:
                 deltas.push(autotune::make("Packet loss", "%", b.2, a.2, false, autotune::LATENCY_NOISE_PERCENT));
             }
         }
-        Ok(NetTuneReport { apply, applied_ids, deltas })
+        // Safety net: if the measured latency got clearly worse, undo everything instead of leaving a slower connection behind.
+        let worse = deltas.first().is_some_and(|d| d.verdict == autotune::Verdict::Worse);
+        let mut applied_ids = applied_ids;
+        if worse {
+            say("Latency got worse, reverting the changes…");
+            for id in &applied_ids { let _ = c.engine.revert(id, &tctx(None)); }
+            applied_ids.clear();
+            c.store.write(|s| s.last_nettune_ids.clear());
+            let _ = c.store.save();
+        }
+        Ok(NetTuneReport { apply, applied_ids, deltas, reverted: worse })
     }).await?
 }
 

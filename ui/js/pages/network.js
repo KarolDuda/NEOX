@@ -72,7 +72,8 @@ function internetTune(root, go, P) {
       try {
         const r = await call('nettune_run', { ids: [...chosen], measure: true });
         status.textContent = '';
-        out.append(h('div', { class: 'h2' }, `${r.apply.applied} applied` + (r.apply.failed ? `, ${r.apply.failed} failed` : '')));
+        out.append(h('div', { class: 'h2' }, r.reverted ? 'Reverted: no improvement' : `${r.apply.applied} applied` + (r.apply.failed ? `, ${r.apply.failed} failed` : '')));
+        if (r.reverted) out.append(h('p', { class: 'small' }, 'Latency got worse after the changes, so NEOX undid them. Your connection is back as it was.'));
         r.deltas.forEach(d => { const good = d.verdict === 'better', bad = d.verdict === 'worse';
           out.append(h('div', { class: 'delta' }, h('div', { class: 'grow' }, h('b', {}, d.name), h('div', { class: 'small muted' }, `${d.before.toFixed(1)} → ${d.after.toFixed(1)} ${d.unit}`)),
             h('div', { class: 'pct ' + (good ? 'up' : bad ? 'down' : 'flat') }, (d.percent > 0 ? '+' : '') + d.percent.toFixed(1) + '%'),

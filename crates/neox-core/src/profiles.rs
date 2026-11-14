@@ -57,8 +57,9 @@ fn is_profile_safe(t: &TweakDefinition) -> bool {
 }
 
 /// Built-in profiles are derived from the catalog by risk level, not from a hand-written list.
-/// Left out of "Maximum performance": conflicts with other items or only fixes specific symptoms.
-const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey"];
+/// Left out of "Maximum performance", Esports and Network boost: conflicts with other items, only fixes specific symptoms,
+/// or (platform_tick) forces the slow platform clock, which adds timer overhead and can raise latency on current Windows.
+const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey", "platform_tick", "mouse_queue_small", "csrss_priority", "mouse_curve_flat"];
 
 /// Raise power draw or disable power saving; kept out of the laptop profile.
 const LAPTOP_UNSAFE: &[&str] = &["cpu_min", "core_parking", "boost_mode", "usb_suspend", "usb_reg", "pcie_aspm", "power_throttle", "cpu_epp", "cpu_idle_off", "wlan_perf", "ultimate_plan", "disk_idle", "usb3_lpm_off"];
