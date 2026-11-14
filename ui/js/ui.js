@@ -95,3 +95,10 @@ export const EFFECT = { unknown: 'Effect: unmeasured', large: 'Claimed effect: l
 export const LOCK_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 export function lockButton(go, label = 'Premium') { return h('button', { class: 'btn sm gold', html: LOCK_SVG + '<span>' + label + '</span>', onclick: () => go('premium') }); }
 export const premiumBadge = () => h('span', { class: 'badge b-premium' }, 'Premium');
+
+// Extra text for the confirmation dialog of risky items.
+export function riskWarning(t) {
+  if (t.risk === 'highRisk') return '⚠ HIGH RISK. This can lower your security or make Windows unstable. Create a restore point first (Dashboard) and read the details below.\n\n';
+  if (t.risk === 'experimental') return '⚠ EXPERIMENTAL. The effect depends on your hardware and can be none or even negative. Revert it if anything gets worse.\n\n';
+  return '';
+}

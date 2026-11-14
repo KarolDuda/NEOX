@@ -4,9 +4,9 @@ use neox_core::models::*;
 fn cat() -> Catalog { Catalog::load_embedded().expect("catalog loads") }
 
 #[test]
-fn loads_all_262_items_with_unique_ids() {
+fn loads_all_281_items_with_unique_ids() {
     let c = cat();
-    assert_eq!(c.len(), 262);
+    assert_eq!(c.len(), 281);
 }
 
 #[test]
@@ -111,5 +111,34 @@ fn free_plan_is_safe_only() {
     for id in neox_core::license::FREE_IDS {
         let t = c.find(id).unwrap();
         assert!(matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution), "{id}");
+    }
+}
+
+#[test]
+fn keyboard_and_mouse_pages_have_free_and_premium_items() {
+    let c = cat();
+    for section in ["keyboard", "mouse"] {
+        let items: Vec<_> = c.all().iter().filter(|t| t.section.as_deref() == Some(section)).collect();
+        let free = items.iter().filter(|t| neox_core::license::is_free(&t.id)).count();
+        assert!(free >= 3, "{section}: free items");
+        assert!(items.len() - free >= 3, "{section}: premium items");
+    }
+    for t in c.all() { assert!(matches!(t.section.as_deref(), None | Some("keyboard") | Some("mouse")), "{}", t.id); }
+}
+
+#[test]
+fn risky_items_carry_a_real_warning() {
+    let c = cat();
+    for t in c.all().iter().filter(|t| matches!(t.risk, RiskLevel::HighRisk | RiskLevel::Experimental) && !t.is_action()) {
+        assert!(t.consequences.chars().count() > 20, "{}", t.id);
+    }
+}
+
+#[test]
+fn internet_slowing_items_are_not_marked_recommended() {
+    let c = cat();
+    for id in neox_core::nettune::NET_UNSAFE {
+        let t = c.find(id).unwrap();
+        assert!(!matches!(t.risk, RiskLevel::Recommended), "{id}");
     }
 }

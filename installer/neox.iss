@@ -32,6 +32,7 @@ OutputBaseFilename=Neox_Setup
 ; Stored without compression on purpose: a small, plain payload looks less like a packer to ML scanners than a high-entropy LZMA blob.
 Compression=none
 SolidCompression=no
+SetupIconFile=..\app\icons\icon.ico
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExe}
 CloseApplications=yes

@@ -70,7 +70,7 @@ pub struct AutoTunePlan { pub hardware: HardwareProfile, pub planned: Vec<Planne
 
 pub const ALREADY_APPLIED: &str = "already applied";
 
-const LAPTOP_EXCLUDED: &[&str] = &["cpu_min", "core_parking", "cpu_epp", "pcie_aspm", "usb_suspend", "usb_reg", "power_throttle", "powerPlan", "wlan_perf", "disk_idle"];
+const LAPTOP_EXCLUDED: &[&str] = &["cpu_min", "core_parking", "cpu_epp", "pcie_aspm", "usb_suspend", "usb_reg", "power_throttle", "powerPlan", "wlan_perf", "disk_idle", "usb3_lpm_off"];
 
 /// Items that change comfort or system behavior: Auto-Tune never touches them (you can enable them manually).
 const ALWAYS_EXCLUDED: &[(&str, &str)] = &[

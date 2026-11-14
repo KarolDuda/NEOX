@@ -12,6 +12,12 @@ use std::sync::Arc;
 fn dword(d: &RegData) -> i64 { match d { RegData::Dword(v) => i64::from(*v), RegData::Qword(v) => *v as i64, _ => -1 } }
 fn q(s: &str) -> String { s.replace('\'', "''") }
 
+/// Parses a hex string such as "0A0b" into bytes; anything that is not a hex digit (spaces, commas) is ignored.
+pub(crate) fn hex_bytes(s: &str) -> Vec<u8> {
+    let digits: Vec<u8> = s.bytes().filter(u8::is_ascii_hexdigit).collect();
+    digits.chunks_exact(2).filter_map(|p| u8::from_str_radix(std::str::from_utf8(p).ok()?, 16).ok()).collect()
+}
+
 // ---------------------------------------------------------------- registry
 
 pub struct RegistryHandler { reg: Arc<dyn RegistryApi>, adapters: Arc<dyn Adapters>, post: Arc<dyn Fn() + Send + Sync> }
@@ -40,7 +46,11 @@ impl RegistryHandler {
     }
 
     fn wanted(s: &RegValueSpec) -> RegData {
-        if s.ty == "dword" { RegData::Dword(s.as_i64() as u32) } else { RegData::Str(s.as_string()) }
+        match s.ty.as_str() {
+            "dword" => RegData::Dword(s.as_i64() as u32),
+            "binary" => RegData::Binary(hex_bytes(&s.as_string())),
+            _ => RegData::Str(s.as_string()),
+        }
     }
 }
 
@@ -53,8 +63,11 @@ impl TweakHandler for RegistryHandler {
             match self.reg.read(&s.hive, &s.path, s.name.as_deref())? {
                 None => return Ok(TweakStatus::NotApplied),
                 Some(cur) => {
-                    let same = if s.ty == "dword" { dword(&cur) == i64::from(s.as_i64() as u32) }
-                               else { matches!(&cur, RegData::Str(x) | RegData::ExpandStr(x) if *x == s.as_string()) };
+                    let same = match s.ty.as_str() {
+                        "dword" => dword(&cur) == i64::from(s.as_i64() as u32),
+                        "binary" => matches!(&cur, RegData::Binary(x) if *x == hex_bytes(&s.as_string())),
+                        _ => matches!(&cur, RegData::Str(x) | RegData::ExpandStr(x) if *x == s.as_string()),
+                    };
                     if !same { return Ok(TweakStatus::NotApplied); }
                 }
             }
@@ -467,6 +480,18 @@ mod tests {
             h.revert(t, &snap, &ctx()).unwrap();
             assert_eq!(h.status(t, &ctx()).unwrap(), TweakStatus::NotApplied, "{}", t.id);
         }
+    }
+
+    #[test]
+    fn hex_bytes_parses_and_ignores_separators() {
+        assert_eq!(hex_bytes("0A0b ff,00"), vec![0x0a, 0x0b, 0xff, 0x00]);
+        assert_eq!(hex_bytes(""), Vec::<u8>::new());
+        let c = cat();
+        let v = &c.find("kb_scancode_gaming").unwrap().values.as_ref().unwrap()[0];
+        assert_eq!(v.ty, "binary");
+        let b = hex_bytes(&v.as_string());
+        assert_eq!(b.len(), 28);
+        assert_eq!(&b[8..12], &[4, 0, 0, 0], "entry count includes the terminator");
     }
 
     #[test]

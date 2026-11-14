@@ -61,31 +61,32 @@ fn is_profile_safe(t: &TweakDefinition) -> bool {
 const MAX_EXCLUDED: &[&str] = &["ultimate_plan", "mpo_off", "hibernate_off", "fast_startup_off", "tcp_status", "kb_layout_hotkey"];
 
 /// Raise power draw or disable power saving; kept out of the laptop profile.
-const LAPTOP_UNSAFE: &[&str] = &["cpu_min", "core_parking", "boost_mode", "usb_suspend", "usb_reg", "pcie_aspm", "power_throttle", "cpu_epp", "cpu_idle_off", "wlan_perf", "ultimate_plan", "disk_idle"];
+const LAPTOP_UNSAFE: &[&str] = &["cpu_min", "core_parking", "boost_mode", "usb_suspend", "usb_reg", "pcie_aspm", "power_throttle", "cpu_epp", "cpu_idle_off", "wlan_perf", "ultimate_plan", "disk_idle", "usb3_lpm_off"];
 
 pub fn built_in(catalog: &Catalog) -> Vec<Profile> {
+    let net_ok = |t: &TweakDefinition| !crate::nettune::NET_UNSAFE.contains(&t.id.as_str());
     let game_area = |t: &TweakDefinition| matches!(t.category, TweakCategory::Performance | TweakCategory::Input | TweakCategory::Network);
     let ids = |f: &dyn Fn(&TweakDefinition) -> bool| catalog.all().iter().filter(|t| f(t)).map(|t| t.id.clone()).collect::<Vec<_>>();
     vec![
         Profile { id: "builtin.safe".into(), built_in: true, name: "Safe start".into(),
             description: "Only items marked as recommended for performance, input delay and network. No services or tasks.".into(),
-            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && t.risk == RiskLevel::Recommended) },
+            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && net_ok(t) && t.risk == RiskLevel::Recommended) },
         Profile { id: "builtin.gaming".into(), built_in: true, name: "Gaming".into(),
             description: "Recommended and cautious changes for performance, input and network. No services, experimental or high-risk items.".into(),
-            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)) },
+            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && net_ok(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)) },
         Profile { id: "builtin.max".into(), built_in: true, name: "Maximum performance".into(),
             description: "Everything that can raise performance or cut latency: every performance, input and network tweak including high-risk ones (CPU mitigations, VBS/HVCI, hypervisor). Back up first; some items lower security and need a restart.".into(),
-            tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd | TweakKind::Cmd)) && game_area(t) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
+            tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd | TweakKind::Cmd)) && game_area(t) && net_ok(t) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
         Profile { id: "builtin.esports".into(), built_in: true, name: "Esports (lowest input latency)".into(),
             description: "Everything that shortens the path from mouse and keyboard to the screen: input, timers, power, MMCSS. Includes experimental items and boot settings.".into(),
             tweak_ids: ids(&|t| (t.is_simple() || matches!(t.kind, TweakKind::Bcd)) && matches!(t.category, TweakCategory::Input | TweakCategory::Performance)
                 && !matches!(t.risk, RiskLevel::HighRisk) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
         Profile { id: "builtin.network".into(), built_in: true, name: "Network boost".into(),
             description: "Lower ping and jitter: every network item including TCP, DNS and adapter settings. Some adapter changes briefly reconnect the network.".into(),
-            tweak_ids: ids(&|t| !t.is_action() && t.category == TweakCategory::Network && !MAX_EXCLUDED.contains(&t.id.as_str())) },
+            tweak_ids: ids(&|t| !t.is_action() && t.category == TweakCategory::Network && net_ok(t) && !MAX_EXCLUDED.contains(&t.id.as_str())) },
         Profile { id: "builtin.streaming".into(), built_in: true, name: "Gaming + streaming".into(),
             description: "Gaming tweaks that keep OBS, Discord and the browser smooth: no services touched, no boot changes, nothing that limits background apps you stream with.".into(),
-            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)
+            tweak_ids: ids(&|t| t.is_simple() && game_area(t) && net_ok(t) && matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution)
                 && !matches!(t.id.as_str(), "bg_apps" | "bg_access_off" | "cpu_min" | "core_parking" | "ultimate_plan")) },
         Profile { id: "builtin.laptop".into(), built_in: true, name: "Laptop (battery friendly)".into(),
             description: "Only low-risk items that do not raise power draw: no forced maximum CPU state, no disabled power saving.".into(),
@@ -194,6 +195,26 @@ mod tests {
                     assert!(!matches!(t.kind, TweakKind::Bcd), "{id}");
                 }
                 assert!(!matches!(t.kind, TweakKind::Service | TweakKind::Task), "{id}");
+            }
+        }
+    }
+
+    #[test]
+    fn no_profile_contains_items_that_can_slow_the_internet() {
+        let c = cat();
+        for p in built_in(&c) {
+            for id in &p.tweak_ids { assert!(!crate::nettune::NET_UNSAFE.contains(&id.as_str()), "{} in {}", id, p.name); }
+        }
+    }
+
+    #[test]
+    fn keyboard_and_mouse_items_never_end_up_in_a_profile_by_accident() {
+        let c = cat();
+        for p in built_in(&c) {
+            for id in &p.tweak_ids {
+                let t = c.find(id).unwrap();
+                if t.section.is_some() { assert!(matches!(t.risk, RiskLevel::Recommended | RiskLevel::Caution) || p.id == "builtin.max" || p.id == "builtin.esports", "{id} in {}", p.name); }
+                assert!(!matches!(id.as_str(), "kb_scancode_gaming" | "kb_winkey_shortcuts_off"), "{id} in {}", p.name);
             }
         }
     }

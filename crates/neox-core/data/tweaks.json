@@ -143,13 +143,6 @@
           "name": "SFIO Priority",
           "type": "string",
           "value": "High"
-        },
-        {
-          "hive": "HKLM",
-          "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
-          "name": "SystemResponsiveness",
-          "type": "dword",
-          "value": 10
         }
       ]
     },
@@ -290,7 +283,8 @@
           "value": "0"
         }
       ],
-      "post": "refreshMouse"
+      "post": "refreshMouse",
+      "section": "mouse"
     },
     {
       "id": "sticky_keys",
@@ -325,7 +319,8 @@
           "type": "string",
           "value": "58"
         }
-      ]
+      ],
+      "section": "keyboard"
     },
     {
       "id": "usb_suspend",
@@ -876,7 +871,8 @@
           "type": "string",
           "value": "31"
         }
-      ]
+      ],
+      "section": "keyboard"
     },
     {
       "id": "mouse_sens",
@@ -898,7 +894,8 @@
           "value": "10"
         }
       ],
-      "post": "refreshMouse"
+      "post": "refreshMouse",
+      "section": "mouse"
     },
     {
       "id": "menu_delay",
@@ -940,7 +937,8 @@
           "type": "string",
           "value": "10"
         }
-      ]
+      ],
+      "section": "mouse"
     },
     {
       "id": "disk_idle",
@@ -999,7 +997,8 @@
           "type": "string",
           "value": "58"
         }
-      ]
+      ],
+      "section": "mouse"
     },
     {
       "id": "toasts_off",
@@ -1152,11 +1151,11 @@
       "title": "Turn off NetBIOS over TCP/IP",
       "description": "Stops broadcasting the computer name over NetBIOS on active adapters. May affect older network shares.",
       "kind": "regPerAdapter",
-      "risk": "caution",
+      "risk": "experimental",
       "requiresAdmin": true,
       "restart": "restart",
-      "claimedEffect": "small",
-      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "claimedEffect": "negligible",
+      "consequences": "Can break file sharing, network printers and name lookups on a home or office network. Gives no gaming or Internet speed gain.",
       "perAdapter": {
         "pathTemplate": "SYSTEM\\CurrentControlSet\\Services\\NetBT\\Parameters\\Interfaces\\Tcpip_{guid}",
         "values": [
@@ -1813,7 +1812,8 @@
       "confirm": null,
       "showsResult": false,
       "action": "open",
-      "target": "main.cpl"
+      "target": "main.cpl",
+      "section": "mouse"
     },
     {
       "id": "open_sound",
@@ -2212,7 +2212,7 @@
       "id": "sysresp",
       "category": "performance",
       "title": "Less resources reserved for multimedia (MMCSS)",
-      "description": "SystemResponsiveness = 0: the scheduler doesn't reserve 20% of CPU time for multimedia tasks.",
+      "description": "Reserves 10% of CPU for background multimedia work instead of the default 20%. 0 is not used: Windows treats very low values unpredictably.",
       "kind": "reg",
       "risk": "recommended",
       "requiresAdmin": true,
@@ -2225,7 +2225,7 @@
           "path": "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile",
           "name": "SystemResponsiveness",
           "type": "dword",
-          "value": 0
+          "value": 10
         }
       ]
     },
@@ -2704,7 +2704,8 @@
           "type": "string",
           "value": "3"
         }
-      ]
+      ],
+      "section": "keyboard"
     },
     {
       "id": "snap_shake_off",
@@ -2725,7 +2726,8 @@
           "type": "dword",
           "value": 1
         }
-      ]
+      ],
+      "section": "mouse"
     },
     {
       "id": "ink_workspace_off",
@@ -2767,7 +2769,8 @@
           "type": "string",
           "value": "0"
         }
-      ]
+      ],
+      "section": "mouse"
     },
     {
       "id": "typing_insights_off",
@@ -2788,7 +2791,8 @@
           "type": "dword",
           "value": 0
         }
-      ]
+      ],
+      "section": "keyboard"
     },
     {
       "id": "ui_priority_boost",
@@ -2820,8 +2824,8 @@
       "risk": "experimental",
       "requiresAdmin": true,
       "restart": "none",
-      "claimedEffect": "medium",
-      "consequences": "Changes the adapter driver settings. The connection drops briefly, and not every adapter supports this.",
+      "claimedEffect": "hardwareDependent",
+      "consequences": "More interrupts: higher CPU use and lower throughput on gigabit and faster links on some adapters. The adapter restarts briefly.",
       "nic": {
         "keywords": [
           "*InterruptModeration"
@@ -2875,7 +2879,7 @@
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "small",
-      "consequences": "Changes the adapter driver settings. The connection drops briefly, and not every adapter supports this.",
+      "consequences": "The CPU segments packets, which can lower upload throughput and raise CPU use. The adapter restarts briefly.",
       "nic": {
         "keywords": [
           "*LsoV2IPv4",
@@ -2957,13 +2961,13 @@
       "id": "dns_negcache",
       "category": "network",
       "title": "DNS: don't cache failed lookups",
-      "description": "MaxNegativeCacheTtl = 0: after a brief server outage, Windows retries immediately.",
+      "description": "MaxNegativeCacheTtl = 0: Windows never remembers that a DNS name or record does not exist. Mostly useless: it only helps right after a short DNS outage.",
       "kind": "reg",
-      "risk": "recommended",
+      "risk": "experimental",
       "requiresAdmin": true,
       "restart": "none",
-      "claimedEffect": "small",
-      "consequences": "Changes a registry value. The previous value is saved and restored when you undo.",
+      "claimedEffect": "negligible",
+      "consequences": "Every missing record (for example AAAA answers) is asked again on each connection, which adds DNS round trips and can make pages load slower. Revert if browsing feels slow.",
       "values": [
         {
           "hive": "HKLM",
@@ -2978,13 +2982,13 @@
       "id": "tcp_offload_off",
       "category": "network",
       "title": "Disable TCP task offload (global)",
-      "description": "DisableTaskOffload = 1: the CPU handles all packet processing. Helps with faulty adapter drivers.",
+      "description": "DisableTaskOffload = 1 turns off checksum and segmentation offload for every adapter. Only useful to work around a faulty network driver.",
       "kind": "reg",
       "risk": "experimental",
       "requiresAdmin": true,
       "restart": "restart",
       "claimedEffect": "hardwareDependent",
-      "consequences": "Changes a registry value. The previous value is saved and restored when you undo.",
+      "consequences": "The CPU must do all packet work, which lowers throughput on fast links and raises CPU use. If downloads got slower, revert this first.",
       "values": [
         {
           "hive": "HKLM",
@@ -3005,7 +3009,7 @@
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "hardwareDependent",
-      "consequences": "Changes system settings via a command-line tool. The previous state is saved before the change.",
+      "consequences": "Higher CPU use at high download speeds and possibly lower throughput. Revert if downloads got slower.",
       "cmd": {
         "on": [
           [
@@ -3034,13 +3038,13 @@
       "id": "tcp_timestamps_off",
       "category": "network",
       "title": "TCP: disable timestamps",
-      "description": "Less TCP packet header overhead.",
+      "description": "Windows 10/11 already ship with TCP timestamps disabled, so this usually changes nothing.",
       "kind": "cmd",
       "risk": "experimental",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "negligible",
-      "consequences": "Changes system settings via a command-line tool. The previous state is saved before the change.",
+      "consequences": "Usually no change. Undo returns the setting to the Windows default (disabled).",
       "cmd": {
         "on": [
           [
@@ -3059,7 +3063,7 @@
             "tcp",
             "set",
             "global",
-            "timestamps=enabled"
+            "timestamps=disabled"
           ]
         ],
         "hasCheck": false
@@ -3075,7 +3079,7 @@
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "negligible",
-      "consequences": "Changes system settings via a command-line tool. The previous state is saved before the change.",
+      "consequences": "Auto-tuning may stay at a level that does not suit your link, which can lower download speed. Revert if downloads got slower.",
       "cmd": {
         "on": [
           [
@@ -3110,7 +3114,7 @@
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "small",
-      "consequences": "Changes system settings via a command-line tool. The previous state is saved before the change.",
+      "consequences": "Xbox networking and some peer-to-peer games use Teredo for NAT traversal; turning it off can worsen NAT type and break party chat or matchmaking.",
       "cmd": {
         "on": [
           [
@@ -3230,13 +3234,13 @@
       "id": "net_connectivity_probe_off",
       "category": "network",
       "title": "Disable connectivity probing (NCSI)",
-      "description": "Windows stops sending periodic requests to Microsoft servers to check Internet status.",
+      "description": "Windows stops checking whether the Internet works (NCSI). It does not speed anything up.",
       "kind": "reg",
-      "risk": "caution",
+      "risk": "highRisk",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "negligible",
-      "consequences": "Changes a registry value. The previous value is saved and restored when you undo.",
+      "consequences": "Windows shows \"No Internet\" for a working connection, and apps that trust that status (Microsoft Store, Teams, Xbox, Office, some launchers) may refuse to go online. A likely cause of an Internet that feels broken. Not recommended; kept only so it can be undone.",
       "values": [
         {
           "hive": "HKLM",
@@ -4155,13 +4159,13 @@
       "id": "svc_wsaif",
       "category": "services",
       "title": "Disable automatic proxy detection (service)",
-      "description": "Speeds up first connections. Don't disable on corporate networks with a proxy. Reversible (restores the previous startup type).",
+      "description": "Stops the WinHTTP Web Proxy Auto-Discovery service. It does not make the Internet faster.",
       "kind": "service",
-      "risk": "caution",
+      "risk": "highRisk",
       "requiresAdmin": true,
       "restart": "none",
       "claimedEffect": "small",
-      "consequences": "Features that depend on this service stop working until the previous startup type is restored.",
+      "consequences": "Apps and Windows components that use WinHTTP (Microsoft Store, Windows Update, Xbox, Edge WebView apps) can fail to connect, which looks like a broken Internet. Reversible (restores the previous startup type), but not recommended.",
       "service": "WinHttpAutoProxySvc"
     },
     {
@@ -5464,7 +5468,8 @@
           "type": "dword",
           "value": 20
         }
-      ]
+      ],
+      "section": "mouse"
     },
     {
       "id": "hvci_off",
@@ -5581,6 +5586,432 @@
           "hive": "HKLM",
           "path": "SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power",
           "name": "CoalescingTimerInterval",
+          "type": "dword",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "kb_numlock_on",
+      "category": "appearance",
+      "title": "Num Lock on at sign-in",
+      "description": "Num Lock is switched on when you sign in.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Keyboard",
+          "name": "InitialKeyboardIndicators",
+          "type": "string",
+          "value": "2"
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_printscreen_snip_off",
+      "category": "appearance",
+      "title": "Print Screen does not open Snipping Tool",
+      "description": "Print Screen goes back to being a plain key, which some games and programs bind.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Keyboard",
+          "name": "PrintScreenKeyForSnippingEnabled",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_cursor_blink_off",
+      "category": "appearance",
+      "title": "Text cursor without blinking",
+      "description": "The text cursor stays solid instead of blinking.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Desktop",
+          "name": "CursorBlinkRate",
+          "type": "string",
+          "value": "-1"
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_winkey_shortcuts_off",
+      "category": "appearance",
+      "title": "Turn off Win-key shortcuts",
+      "description": "Win+D, Win+E, Win+R and the other Win-key combinations stop working, so you cannot trigger them by accident in a game. The Win key alone still opens Start.",
+      "consequences": "Windows shortcuts that use the Win key no longer work until you undo this. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+          "name": "NoWinKeys",
+          "type": "dword",
+          "value": 1
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_scancode_gaming",
+      "category": "appearance",
+      "title": "Gaming keyboard: disable Caps Lock and Windows keys",
+      "description": "Remaps Caps Lock and both Windows keys to nothing at driver level (Scancode Map), so they can never interrupt a game.",
+      "consequences": "WARNING: the keys stop working in every program, including the Start menu key, until you undo this. Applies to all users, needs a restart. Revert from History if you cannot type something you need.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control\\Keyboard Layout",
+          "name": "Scancode Map",
+          "type": "binary",
+          "value": "00000000000000000400000000003A0000005BE000005CE000000000"
+        }
+      ],
+      "section": "keyboard"
+    },
+    {
+      "id": "mouse_touch_feedback_off",
+      "category": "appearance",
+      "title": "Turn off touch and click feedback circles",
+      "description": "Removes the visual feedback Windows draws for touch and gestures.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Cursors",
+          "name": "ContactVisualization",
+          "type": "dword",
+          "value": 0
+        },
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Cursors",
+          "name": "GestureVisualization",
+          "type": "dword",
+          "value": 0
+        }
+      ],
+      "section": "mouse"
+    },
+    {
+      "id": "mouse_dblclick_fast",
+      "category": "appearance",
+      "title": "Faster double-click (400 ms)",
+      "description": "Shortens the double-click window from 500 ms to 400 ms.",
+      "consequences": "A slow double-click may stop registering. Reversible.",
+      "kind": "reg",
+      "risk": "caution",
+      "requiresAdmin": false,
+      "restart": "logout",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Control Panel\\Mouse",
+          "name": "DoubleClickSpeed",
+          "type": "string",
+          "value": "400"
+        }
+      ],
+      "section": "mouse"
+    },
+    {
+      "id": "open_keyboard_settings",
+      "category": "tools",
+      "title": "Keyboard and typing settings",
+      "description": "Opens Windows typing settings.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Open",
+      "confirm": null,
+      "showsResult": false,
+      "action": "open",
+      "target": "ms-settings:typing",
+      "section": "keyboard"
+    },
+    {
+      "id": "kb_devices",
+      "category": "tools",
+      "title": "List connected keyboards",
+      "description": "Shows the keyboards Windows currently sees.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Show",
+      "confirm": null,
+      "showsResult": true,
+      "action": "info",
+      "target": "Get-PnpDevice -Class Keyboard -PresentOnly | Select-Object -ExpandProperty FriendlyName | Sort-Object -Unique",
+      "section": "keyboard"
+    },
+    {
+      "id": "mouse_devices",
+      "category": "tools",
+      "title": "List connected mice",
+      "description": "Shows the mice and pointing devices Windows currently sees.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Show",
+      "confirm": null,
+      "showsResult": true,
+      "action": "info",
+      "target": "Get-PnpDevice -Class Mouse -PresentOnly | Select-Object -ExpandProperty FriendlyName | Sort-Object -Unique",
+      "section": "mouse"
+    },
+    {
+      "id": "mouse_accel_check",
+      "category": "tools",
+      "title": "Check mouse acceleration",
+      "description": "Reads your pointer settings and tells you whether acceleration (Enhance pointer precision) is on.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Check",
+      "confirm": null,
+      "showsResult": true,
+      "action": "info",
+      "target": "$m = Get-ItemProperty 'HKCU:\\Control Panel\\Mouse'; 'Pointer speed (1-20): ' + $m.MouseSensitivity; 'Enhance pointer precision: ' + $(if ($m.MouseSpeed -eq '0') { 'OFF (best for aiming)' } else { 'ON' }); 'Acceleration thresholds: ' + $m.MouseThreshold1 + ' / ' + $m.MouseThreshold2",
+      "section": "mouse"
+    },
+    {
+      "id": "usb3_lpm_off",
+      "category": "input",
+      "title": "Turn off USB 3 link power saving",
+      "description": "USB 3 ports do not drop into low-power link states, which avoids a wake-up delay on mice, keyboards and headsets (on AC power).",
+      "consequences": "Slightly higher power draw on AC power.",
+      "kind": "powerIdx",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "small",
+      "power": {
+        "subgroup": "2a737441-1930-4402-8d77-b2bebba308a3",
+        "setting": "d4e98f31-5ffe-4ce1-be31-1b38b384c009",
+        "value": 0
+      }
+    },
+    {
+      "id": "autoplay_off",
+      "category": "privacy",
+      "title": "Turn off AutoPlay",
+      "description": "Windows no longer starts programs from USB sticks and discs on its own.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\AutoplayHandlers",
+          "name": "DisableAutoplay",
+          "type": "dword",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "clipboard_history_off",
+      "category": "privacy",
+      "title": "Turn off clipboard history",
+      "description": "Stops Windows from keeping a history of what you copy.",
+      "consequences": "Changes a registry value; the previous value is saved and restored on undo.",
+      "kind": "reg",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "negligible",
+      "values": [
+        {
+          "hive": "HKCU",
+          "path": "Software\\Microsoft\\Clipboard",
+          "name": "EnableClipboardHistory",
+          "type": "dword",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "id": "clean_vscode_cache",
+      "category": "cleanup",
+      "title": "Clear Visual Studio Code cache",
+      "description": "Deletes Cache, CachedData, Code Cache and GPUCache. Close VS Code before cleaning.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Clean",
+      "confirm": "Close Visual Studio Code before cleaning. Continue?",
+      "showsResult": false,
+      "action": "clean",
+      "patterns": [
+        "%APPDATA%\\Code\\Cache",
+        "%APPDATA%\\Code\\CachedData",
+        "%APPDATA%\\Code\\Code Cache",
+        "%APPDATA%\\Code\\GPUCache"
+      ]
+    },
+    {
+      "id": "clean_teams_cache",
+      "category": "cleanup",
+      "title": "Clear Microsoft Teams (classic) cache",
+      "description": "Deletes Cache, GPUCache, Code Cache and temporary files. Close Teams before cleaning.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": false,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Clean",
+      "confirm": "Close Microsoft Teams before cleaning. Continue?",
+      "showsResult": false,
+      "action": "clean",
+      "patterns": [
+        "%APPDATA%\\Microsoft\\Teams\\Cache",
+        "%APPDATA%\\Microsoft\\Teams\\GPUCache",
+        "%APPDATA%\\Microsoft\\Teams\\Code Cache",
+        "%APPDATA%\\Microsoft\\Teams\\tmp"
+      ]
+    },
+    {
+      "id": "net_defaults_reset",
+      "category": "network",
+      "title": "Network repair: restore TCP defaults",
+      "description": "Resets TCP auto-tuning, RSS and RSC to the Windows defaults and flushes DNS. Use it if the Internet got slower after tweaking. Also use \"Undo all network tweaks\" on the Network page.",
+      "consequences": "",
+      "kind": "action",
+      "risk": "recommended",
+      "requiresAdmin": true,
+      "restart": "none",
+      "claimedEffect": "tool",
+      "button": "Repair",
+      "confirm": "Reset TCP auto-tuning, RSS and RSC to the Windows defaults and flush the DNS cache?",
+      "showsResult": false,
+      "action": "command",
+      "commands": [
+        [
+          "netsh",
+          "int",
+          "tcp",
+          "set",
+          "global",
+          "autotuninglevel=normal"
+        ],
+        [
+          "netsh",
+          "int",
+          "tcp",
+          "set",
+          "global",
+          "rss=enabled"
+        ],
+        [
+          "ipconfig",
+          "/flushdns"
+        ],
+        [
+          "netsh",
+          "int",
+          "tcp",
+          "set",
+          "global",
+          "rsc=enabled"
+        ]
+      ],
+      "successMessage": "TCP settings reset to the Windows defaults and DNS flushed.",
+      "timeoutSeconds": 60
+    },
+    {
+      "id": "svchost_split_off",
+      "category": "performance",
+      "title": "Merge service host processes",
+      "description": "SvcHostSplitThresholdInKB is raised so Windows stops splitting services into many separate svchost processes. Fewer processes and a little less RAM.",
+      "consequences": "If one service in a shared host crashes it can take its neighbours with it. Reversible; needs a restart.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SYSTEM\\CurrentControlSet\\Control",
+          "name": "SvcHostSplitThresholdInKB",
+          "type": "dword",
+          "value": 4294967295
+        }
+      ]
+    },
+    {
+      "id": "fth_off",
+      "category": "performance",
+      "title": "Turn off Fault Tolerant Heap",
+      "description": "Stops Windows from applying slow compatibility fixes to a program after it has crashed a few times.",
+      "consequences": "A program that keeps crashing is no longer silently patched by Windows and may crash more visibly. Reversible.",
+      "kind": "reg",
+      "risk": "experimental",
+      "requiresAdmin": true,
+      "restart": "restart",
+      "claimedEffect": "small",
+      "values": [
+        {
+          "hive": "HKLM",
+          "path": "SOFTWARE\\Microsoft\\FTH",
+          "name": "Enabled",
           "type": "dword",
           "value": 0
         }

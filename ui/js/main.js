@@ -13,11 +13,13 @@ const ICONS = {
   disk: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/>',
   boost: '<path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/>',
+  keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+  mouse: '<rect x="6" y="2.5" width="12" height="19" rx="6"/><path d="M12 2.5v7M6 9.5h12"/>',
   premium: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
 };
 const PAGES = [
-  ['dashboard', 'Dashboard'], ['premium', 'Premium'], ['autotune', 'Auto-Tune'], ['boost', 'Boost'], ['gaming', 'Gaming'], ['optimizations', 'Optimizations'], ['network', 'Network'],
+  ['dashboard', 'Dashboard'], ['premium', 'Premium'], ['autotune', 'Auto-Tune'], ['boost', 'Boost'], ['gaming', 'Gaming'], ['optimizations', 'Optimizations'], ['keyboard', 'Keyboard'], ['mouse', 'Mouse'], ['network', 'Network'],
   ['system', 'System'], ['startup', 'Startup & services'], ['disk', 'Disk'], ['history', 'History'], ['settings', 'Settings'],
 ];
 const loaders = Object.fromEntries(PAGES.map(([id]) => [id, () => import(`./pages/${id}.js`)]));
@@ -57,7 +59,7 @@ S.go = go;
 let upsellOpen = false;
 window.addEventListener('neox-premium', async e => {
   if (upsellOpen) return; upsellOpen = true;
-  const yes = await confirmBox('This is a Premium feature', (e.detail || 'This feature is part of NEOX Premium.') + '\n\nThe free plan includes 20 optimizations. Premium unlocks everything.', 'See Premium');
+  const yes = await confirmBox('This is a Premium feature', (e.detail || 'This feature is part of NEOX Premium.') + `\n\nThe free plan includes ${S.lic.freeIds.length} items. Premium unlocks everything.`, 'See Premium');
   upsellOpen = false; if (yes) go('premium');
 });
 

@@ -1,9 +1,9 @@
 import { call } from '../api.js';
 import { h, page, toast, busy, fmtTime } from '../ui.js';
-import { S, refreshLicense } from '../state.js';
+import { S, refreshLicense, getCatalog } from '../state.js';
 
-const FEATURES = [
-  ['All 262 optimizations', 'The free plan has 40. Premium unlocks every performance, input, network and cleanup item, including the high-impact ones.'],
+const FEATURES = (all, free) => [
+  [`All ${all} optimizations`, `The free plan has ${free}. Premium unlocks every performance, input, network and cleanup item, including the high-impact ones.`],
   ['Auto-Tune', 'Scans your hardware, applies the right set, and measures before and after.'],
   ['Internet Auto-Tune', 'Detects Ethernet and Wi-Fi and applies the network items that fit each, then measures latency, jitter and loss.'],
   ['Profiles', 'Maximum performance, Esports, Network boost, Streaming and Laptop. Plus your own profiles with import and export.'],
@@ -12,8 +12,8 @@ const FEATURES = [
   ['Performance Score', 'Measures CPU, memory and timer jitter and keeps the history, so you see what every change really did.'],
   ['Game tools', 'Fortnite low-latency config and baseline snapshots with before/after comparison.'],
 ];
-const ROWS = [
-  ['Optimizations', '40', 'All 262'], ['Memory Cleaner', '—', '✔'], ['Performance Score history', '—', '✔'], ['Auto-Tune', '—', '✔'], ['Internet Auto-Tune (Wi-Fi + Ethernet)', '—', '✔'],
+const ROWS = (all, free) => [
+  ['Optimizations, keyboard and mouse tweaks', String(free), 'All ' + all], ['Memory Cleaner', '—', '✔'], ['Performance Score history', '—', '✔'], ['Auto-Tune', '—', '✔'], ['Internet Auto-Tune (Wi-Fi + Ethernet)', '—', '✔'],
   ['Profiles (load, create, import, export)', '—', '✔'], ['Game Boost', '—', '✔'], ['Fortnite optimizer', '—', '✔'],
   ['Baselines & comparison', '—', '✔'], ['DNS switcher', '✔', '✔'], ['Undo / revert everything', '✔', '✔'], ['Restore point, history, disk analyzer', '✔', '✔'],
 ];
@@ -21,6 +21,7 @@ const ROWS = [
 export default async function premium({ go }) {
   const lic = await refreshLicense();
   const st = lic.status;
+  const all = (await getCatalog()).length, free = lic.freeIds.length;
   const buy = h('button', { class: 'btn gold lg' }, 'Buy Premium version');
   const trial = h('button', { class: 'btn lg' }, 'Start 7-day free trial');
   trial.onclick = () => busy(trial, async () => {
@@ -35,7 +36,7 @@ export default async function premium({ go }) {
     h('h1', {}, lic.premium ? 'Premium is active' : 'Everything NEOX can do. Unlocked.'),
     h('p', { class: 'muted', style: { maxWidth: '640px' } }, lic.premium
       ? (st.id === 'TRIAL' ? `Free trial. ${Math.max(0, Math.ceil((st.exp * 1000 - Date.now()) / 864e5))} day(s) left. When it ends, everything you applied with Premium is reverted automatically.` : `Licensed to ${st.name}. Bound to this PC.` + (st.exp ? ` Valid until ${fmtTime(st.exp * 1000)}.` : ' Lifetime license.'))
-      : 'Free gives you 40 safe optimizations and the DNS switcher. Premium adds every optimization, Auto-Tune, Internet Auto-Tune, Memory Cleaner, Performance Score, profiles and game tools.'),
+      : `Free gives you ${free} safe items, network repair and the DNS switcher. Premium adds every optimization, the full Keyboard and Mouse pages, Auto-Tune, Internet Auto-Tune, Memory Cleaner, Performance Score, profiles and game tools.`),
     lic.premium && st.id !== 'TRIAL' ? null : h('div', { class: 'row wrap', style: { marginTop: '16px' } }, buy, lic.premium ? null : trial, h('span', { class: 'small muted' }, lic.premium ? 'Opens our Discord. Open a ticket in the Purchase channel.' : 'Trial: no payment, one per PC. After 7 days Premium changes are reverted automatically.')));
 
   const activate = activateCard(lic, go);
@@ -47,10 +48,10 @@ export default async function premium({ go }) {
       h('li', {}, h('span', {}, 'Open Settings (or this page), paste the code and press Activate.')),
       h('li', {}, h('span', {}, 'NEOX reads your PC\'s hardware ID and binds the code to it. Moving to a new PC? Open a ticket in Help.'))));
 
-  const feats = h('div', { class: 'prem-grid' }, FEATURES.map(([t, d]) => h('div', { class: 'prem-feat' }, h('b', {}, t), h('span', { class: 'small muted' }, d))));
+  const feats = h('div', { class: 'prem-grid' }, FEATURES(all, free).map(([t, d]) => h('div', { class: 'prem-feat' }, h('b', {}, t), h('span', { class: 'small muted' }, d))));
   const table = h('div', { class: 'card' }, h('table', { class: 'cmp' },
     h('thead', {}, h('tr', {}, h('th', {}, ''), h('th', {}, 'Free'), h('th', { class: 'gold-text' }, 'Premium'))),
-    h('tbody', {}, ROWS.map(r => h('tr', {}, h('td', {}, r[0]), h('td', { class: r[1] === '—' ? 'n' : '' }, r[1]), h('td', { class: 'y' }, r[2]))))));
+    h('tbody', {}, ROWS(all, free).map(r => h('tr', {}, h('td', {}, r[0]), h('td', { class: r[1] === '—' ? 'n' : '' }, r[1]), h('td', { class: 'y' }, r[2]))))));
   return page('Premium', null, hero, how, activate, feats, table);
 }
 

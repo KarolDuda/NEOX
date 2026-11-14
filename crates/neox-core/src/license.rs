@@ -92,14 +92,19 @@ pub fn verify(token: &str, my_hwid: &str, now: i64) -> LicenseStatus {
 
 // ---------------------------------------------------------------- what the free version includes
 
-/// The 40 optimizations available without a license. Reverting is never restricted.
+/// The optimizations available without a license (the free plan). Reverting is never restricted.
 pub const FREE_IDS: &[&str] = &[
     "restore_point", "game_mode", "game_dvr", "gamebar_off", "mouse_accel", "sticky_keys", "bg_apps", "net_throttle",
     "qos_limit", "delivery_opt", "ads_off", "widgets_off", "temp_clean", "recycle", "dns_flush", "sysinfo",
     "open_startup", "open_taskmgr", "wpad_off", "llmnr_off",
     "mmcss_games", "fse_global", "kb_speed", "mouse_sens", "menu_delay", "startup_delay", "shutdown_fast", "no_auto_reboot",
-    "lastaccess_off", "sysresp", "edge_boost_off", "chrome_bg_off", "dx_windowed", "dns_negcache", "prefetch", "shader_cache",
+    "lastaccess_off", "sysresp", "edge_boost_off", "chrome_bg_off", "dx_windowed", "prefetch", "shader_cache",
     "browser_cache", "crash_dumps", "trim_ssd", "open_resmon",
+    // Keyboard and Mouse pages: the basics are free, the rest is Premium.
+    "kb_numlock_on", "kb_printscreen_snip_off", "open_keyboard_settings", "kb_devices",
+    "mouse_touch_feedback_off", "open_mouse", "mouse_devices", "mouse_accel_check",
+    // More free tools.
+    "usb3_lpm_off", "autoplay_off", "clipboard_history_off", "clean_vscode_cache", "clean_teams_cache", "net_defaults_reset",
 ];
 
 pub fn is_free(id: &str) -> bool { FREE_IDS.contains(&id) }
@@ -182,8 +187,10 @@ mod tests {
         assert!(a.starts_with("NEOX-") && a.len() == 24);
     }
     #[test]
-    fn free_plan_has_exactly_40_items_and_gates_the_rest() {
-        assert_eq!(FREE_IDS.len(), 40);
+    fn free_plan_has_the_expected_items_and_gates_the_rest() {
+        assert_eq!(FREE_IDS.len(), 53);
+        let mut seen = std::collections::HashSet::new();
+        assert!(FREE_IDS.iter().all(|i| seen.insert(*i)), "duplicate id in FREE_IDS");
         assert!(check_item(false, "game_mode").is_ok());
         assert!(check_item(false, "hvci_off").unwrap_err().starts_with("PREMIUM:"));
         assert!(check_item(true, "hvci_off").is_ok());

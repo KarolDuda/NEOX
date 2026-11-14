@@ -144,6 +144,9 @@ pub struct TweakDefinition {
     pub requires_admin: bool,
     pub restart: RestartRequirement,
     pub claimed_effect: EffectClaim,
+    /// Optional page the item belongs to ("keyboard" or "mouse"). Items with a section are shown on that page, not in Optimizations.
+    #[serde(default)]
+    pub section: Option<String>,
 
     // reg*
     #[serde(default)] pub values: Option<Vec<RegValueSpec>>,

@@ -1,6 +1,6 @@
 import { call, on } from '../api.js';
 import { h, page, toast, busy, confirmBox, lockButton, premiumBadge } from '../ui.js';
-import { S, refreshLicense } from '../state.js';
+import { S, refreshLicense, refreshInfo, getCatalog } from '../state.js';
 
 export default async function network({ go }) {
   await refreshLicense();
@@ -12,7 +12,7 @@ export default async function network({ go }) {
   const dnsCard = h('div', { class: 'card col', style: { gap: '10px' } }, h('div', { class: 'h2' }, 'Set DNS'), h('div', { class: 'small muted' }, 'Free. Pick a provider in one click, or run the benchmark below to find the fastest for you.'),
     h('div', { class: 'row wrap' }, PRESETS.map(([n, a, b]) => h('button', { class: 'btn', onclick: setDns(n, a, b) }, n)), h('button', { class: 'btn', onclick: async () => { const r = await call('net_dns_restore'); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Automatic (restore mine)')));
   const tune = h('div', { class: 'stack' });
-  const wrap = page('Network', 'Measure first, change second: latency to common servers, DNS speed, and a path MTU probe.', info, dnsCard, internetTune(tune, go, P),
+  const wrap = page('Network', 'Measure first, change second: latency to common servers, DNS speed, and a path MTU probe.', info, repairCard(), dnsCard, internetTune(tune, go, P),
     h('div', { class: 'row' }, h('h3', { class: 'h2 grow' }, 'Latency'), runBtn('Run ping test', 'net_ping_all', pings)), pings,
     h('div', { class: 'row' }, h('h3', { class: 'h2 grow' }, 'DNS benchmark'), runBtn('Run DNS benchmark', 'net_dns_bench', dns),
       h('button', { class: 'btn', onclick: async () => { const r = await call('net_dns_restore'); toast(r.message, r.success ? 'ok' : 'err'); } }, 'Restore my DNS')), dns, status);
@@ -30,6 +30,28 @@ export default async function network({ go }) {
     ...ad.map(a => h('div', { class: 'row', style: { marginTop: '8px' } }, h('b', { class: 'grow' }, a.name + ' · ' + a.description), h('span', { class: 'muted small' }, `${a.speedMbps} Mbps · DNS ${a.dns.join(', ') || 'auto'}`))),
     h('div', { class: 'small muted', style: { marginTop: '8px' } }, mtu ? `Largest working payload without fragmentation: ${mtu} bytes (MTU ${mtu + 28}).` : 'MTU probe unavailable.'))).catch(() => {});
   return wrap;
+}
+
+// Free: undoes every network tweak NEOX applied and puts TCP back to the Windows defaults.
+function repairCard() {
+  const b = h('button', { class: 'btn primary' }, 'Repair my internet');
+  b.onclick = () => busy(b, async () => {
+    if (!(await confirmBox('Repair network settings?', 'NEOX will undo every network optimization it applied (including Internet Auto-Tune and profiles), reset TCP auto-tuning, RSS and RSC to the Windows defaults and flush the DNS cache.\n\nThe connection may drop for a few seconds. Needs administrator rights.', 'Repair'))) return;
+    b.textContent = 'Repairing…';
+    let undone = 0;
+    try { undone += await call('nettune_undo'); } catch { /* nothing recorded */ }
+    try {
+      const [applied, catalog] = await Promise.all([call('applied_ids'), getCatalog()]);
+      const net = new Set(catalog.filter(t => t.category === 'network' && t.kind !== 'action').map(t => t.id));
+      ['svc_wsaif', 'svc_lmhosts'].forEach(id => { if (catalog.some(t => t.id === id)) net.add(id); });
+      for (const id of applied) if (net.has(id)) { try { const r = await call('tweak_revert', { id, gameExe: null }); if (r.success) undone++; } catch { /* keep going */ } }
+    } catch (e) { toast(String(e), 'err'); }
+    let ok = true, msg = `Undid ${undone} network tweak(s).`;
+    try { const r = await call('action_run', { id: 'net_defaults_reset' }); ok = r.success; msg += ' ' + r.message; } catch (e) { ok = false; msg += ' ' + e; }
+    toast(msg, ok ? 'ok' : 'err', 9000); refreshInfo();
+  });
+  return h('div', { class: 'card col', style: { gap: '10px' } }, h('div', { class: 'h2' }, 'Internet feels slow or broken?'),
+    h('div', { class: 'small muted' }, 'Free. Undoes every network change NEOX made and restores the Windows TCP defaults. Try this first, then measure again with the ping test below.'), h('div', { class: 'row' }, b));
 }
 
 function internetTune(root, go, P) {
